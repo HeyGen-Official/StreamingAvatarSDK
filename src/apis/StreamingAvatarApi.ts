@@ -303,7 +303,7 @@ export class StreamingAvatarApi extends runtime.BaseAPI {
     /**
      * This call creates and starts a new streaming avatar session
      */
-    async createStartAvatar(requestParameters: CreateStreamingAvatarRequest, handleMediaStream?: (stream: MediaStream) => void, debugStream?: (string)=>void, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<NewSessionData> {
+    async createStartAvatar(requestParameters: CreateStreamingAvatarRequest, debugStream?: (string)=>void, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<NewSessionData> {
         const convertToRTCIceServer = (iceServers: NewSessionIceServers2[]) => {
             const rtcs: RTCIceServer[] = [];
             iceServers.forEach(server => {
@@ -342,12 +342,7 @@ export class StreamingAvatarApi extends runtime.BaseAPI {
                 
                 if ( event.track.kind === 'audio' || event.track.kind == 'video'){
                     console.log("STREAMING AVATAR: Received the track", event.track);
-                    
-                    if(handleMediaStream){
-                        handleMediaStream(event.streams[0]);
-                    }
                     this._mediaStream = event.streams[0];
-
                 }
             }
 
