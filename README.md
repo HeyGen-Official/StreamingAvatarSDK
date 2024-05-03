@@ -1,4 +1,4 @@
-## streaming-avatar@1.0.0
+## streaming-avatar
 
 ## Introduction
 
@@ -7,12 +7,11 @@ This HeyGen Streaming Avatar SDK provides a convenient way for developers to bet
 ## Installation 
 
 ```
-npm install
+npm install @heygen/streaming-avatar
 ```
 
-To build and compile the typescript sources to javascript use:
+To build and compile the typescript sources to javascript run install then:
 ```
-npm install
 npm run build
 ```
 
