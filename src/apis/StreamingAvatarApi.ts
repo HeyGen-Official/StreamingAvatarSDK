@@ -321,13 +321,12 @@ export class StreamingAvatarApi extends runtime.BaseAPI {
             return new RTCSessionDescription({sdp: serverSdp.sdp, type: serverSdp.type as RTCSdpType})
         }
 
+         const debug = new Debug(debugStream);
 
         const onMessage = (event) => {
             const message = event.data;
-            console.log('STREAMING AVATAR: Received message:', message);
+            debug.print(`STREAMING AVATAR: Received message: ${message}`);
         }
-        
-        const debug = new Debug(debugStream);
 
         try{
             debug.print("Creating a new session...");
@@ -341,7 +340,6 @@ export class StreamingAvatarApi extends runtime.BaseAPI {
             this.peerConnection.ontrack = (event) => {
                 
                 if ( event.track.kind === 'audio' || event.track.kind == 'video'){
-                    console.log("STREAMING AVATAR: Received the track", event.track);
                     this._mediaStream = event.streams[0];
                 }
             }
@@ -359,7 +357,6 @@ export class StreamingAvatarApi extends runtime.BaseAPI {
             debug.print("Session creation complete.");
 
             if(!data){
-                console.log("STREAMING AVATAR: Please create session first");
                 throw Error("STREAMING AVATAR: Issue with created session");
             }
 
@@ -368,19 +365,17 @@ export class StreamingAvatarApi extends runtime.BaseAPI {
             await this.peerConnection.setLocalDescription(localDescription);
 
             this.peerConnection.onicecandidate = async ({ candidate }) => {
-                console.log('STREAMING AVATAR: Received ICE candidate:', candidate);
                 if (candidate) {
-                        console.log("STREAMING AVATAR",  {candidate: candidate.candidate, sdpMid: candidate.sdpMid, sdpMLineIndex: candidate.sdpMLineIndex, usernameFragment: candidate.usernameFragment});
-                        this.submitICECandidate({iceRequest: {sessionId: this.sessionId, candidate: {candidate: candidate.candidate, sdpMid: candidate.sdpMid, sdpMLineIndex: candidate.sdpMLineIndex, usernameFragment: candidate.usernameFragment}}})
-                        .then( async (c) => {
-                            // When ICE connection state changes, display the new state
-                            this.peerConnection.oniceconnectionstatechange = (_event) => {
-                                debugStream(`ICE connection state changed to: ${this.peerConnection.iceConnectionState}`);
-                            };  
-                        }
-                        ).catch(error => {
-                            debug.print(JSON.stringify(error));
-                        });
+                    this.submitICECandidate({iceRequest: {sessionId: this.sessionId, candidate: {candidate: candidate.candidate, sdpMid: candidate.sdpMid, sdpMLineIndex: candidate.sdpMLineIndex, usernameFragment: candidate.usernameFragment}}})
+                    .then( async (c) => {
+                        // When ICE connection state changes, display the new state
+                        this.peerConnection.oniceconnectionstatechange = (_event) => {
+                            debugStream(`ICE connection state changed to: ${this.peerConnection.iceConnectionState}`);
+                        };
+                    }
+                    ).catch(error => {
+                        debug.print(JSON.stringify(error));
+                    });
                 }
             };
 
