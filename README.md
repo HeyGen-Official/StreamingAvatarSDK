@@ -1,5 +1,9 @@
 ## streaming-avatar
 
+## Changes 1.0.4
+
+1. The API now requires a bearer auth token. API Keys will no longer be supported by this SDK as an authorization method. Please see updated instructions below on how to obtain a token.
+
 ## Introduction
 
 This HeyGen Streaming Avatar SDK provides a convenient way for developers to better interface with HeyGen's Streaming Avatar. 
@@ -17,13 +21,13 @@ npm run build
 
 ## Basic Usage
 
-For an indepth demo, please refer to our Streaming Avatar SDK demo. 
+For an indepth demo, please refer to our [Streaming Avatar SDK demo](https://github.com/HeyGen-Official/StreamingAvatarTSDemo). 
 
 ```
 import { Configuration, NewSessionData, StreamingAvatarApi} from 'streaming-avatar';
 
 const streamingAvatar = new StreamingAvatarApi(
-      new Configuration({apiKey: 'ENTER_API_KEY_HERE'})
+      new Configuration({accessToken: 'ENTER_ACCESS_TOKEN_HERE'})
     )
 
 async function main(){
@@ -42,9 +46,15 @@ main();
 
 ## Troubleshooting FAQ
 
-### How do I get an API Key?
 
-Either an an API Key or Trial Token from HeyGen is required to run this Streaming API demo. API Keys are reserved for Enterprise customers, whereas both Creator and Teams plan users can activate and use a Trial token. You can retrieve either the API Key or Trial Token by logging in to HeyGen and navigating to this page in your settings: https://app.heygen.com/settings?nav=API
+### How do I get an Access token Key?
+
+To generate your access token you must first have access to your API key. API Keys are reserved for Enterprise customers. You can retrieve either the API Key or Trial Token by logging in to HeyGen and navigating to this page in your settings: https://app.heygen.com/settings?nav=API. Afterwards you can run the following to obtain your access token.
+
+```
+curl https://api.heygen.com/v1/streaming.create_token -H "x-api-key: <api-key>" -H "content-type: application/json" -d {}
+{"error": null, "data": {"token": "<token>"}}
+```
 
 ### Which Avatars can I use with this project?
 
