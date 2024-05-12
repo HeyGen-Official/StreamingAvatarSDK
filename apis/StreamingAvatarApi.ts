@@ -341,7 +341,7 @@ export class StreamingAvatarApi extends runtime.BaseAPI {
             return new RTCSessionDescription({sdp: serverSdp.sdp, type: serverSdp.type as RTCSdpType})
         }
 
-         const debug = new Debug(debugStream);
+        const debug = new Debug(debugStream);
 
         const onMessage = (event) => {
             const message = event.data;
@@ -401,10 +401,11 @@ export class StreamingAvatarApi extends runtime.BaseAPI {
 
             await this.startStreamingAvatar({startSessionRequest: {sdp: localDescription, sessionId: this.sessionId}});
 
-            var receivers = this.peerConnection.getReceivers();
+            let receivers = this.peerConnection.getReceivers();
             
-            receivers.forEach((receiver) => {
+            receivers.forEach(receiver => {
                 // Set the jitter buffer target to 500ms to reduce freeze
+                // https://developer.mozilla.org/en-US/docs/Web/API/RTCRtpReceiver/jitterBufferTarget
                 receiver.jitterBufferTarget = 500
             });
 
