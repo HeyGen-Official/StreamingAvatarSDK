@@ -403,10 +403,11 @@ export class StreamingAvatarApi extends runtime.BaseAPI {
 
             let receivers = this.peerConnection.getReceivers();
             
+            
             receivers.forEach(receiver => {
-                // Set the jitter buffer target to 500ms to reduce freeze
-                // https://developer.mozilla.org/en-US/docs/Web/API/RTCRtpReceiver/jitterBufferTarget
-                receiver.jitterBufferTarget = 500
+                if('jitterBufferTarget' in receiver){
+                    receiver.jitterBufferTarget = 500;
+                }
             });
 
             debug.print("Session started successfully");
