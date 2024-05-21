@@ -341,7 +341,7 @@ export class StreamingAvatarApi extends runtime.BaseAPI {
             return new RTCSessionDescription({sdp: serverSdp.sdp, type: serverSdp.type as RTCSdpType})
         }
 
-         const debug = new Debug(debugStream);
+        const debug = new Debug(debugStream);
 
         const onMessage = (event) => {
             const message = event.data;
@@ -400,6 +400,15 @@ export class StreamingAvatarApi extends runtime.BaseAPI {
             };
 
             await this.startStreamingAvatar({startSessionRequest: {sdp: localDescription, sessionId: this.sessionId}});
+
+            let receivers = this.peerConnection.getReceivers();
+            
+            
+            receivers.forEach(receiver => {
+                if('jitterBufferTarget' in receiver){
+                    receiver.jitterBufferTarget = 500;
+                }
+            });
 
             debug.print("Session started successfully");
 
