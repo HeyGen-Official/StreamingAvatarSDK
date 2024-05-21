@@ -1,6 +1,6 @@
 ## streaming-avatar
 
-## Changes 1.0.4
+## Changes 1.0.7
 
 1. The API now requires a bearer auth token. API Keys will no longer be supported by this SDK as an authorization method. Please see updated instructions below on how to obtain a token.
 
