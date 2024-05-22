@@ -54,7 +54,7 @@ To generate your access token you must first have access to your API key. API Ke
 Please note the tokens are one time use.
 
 ```
-curl https://api.heygen.com/v1/streaming.create_token -H "x-api-key: <api-key>" -H "content-type: application/json"
+curl -X POST https://api.heygen.com/v1/streaming.create_token -H "x-api-key: <api-key>"
 ```
 
 ### Which Avatars can I use with this project?
