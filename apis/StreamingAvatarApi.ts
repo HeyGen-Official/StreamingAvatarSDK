@@ -401,14 +401,17 @@ export class StreamingAvatarApi extends runtime.BaseAPI {
 
             await this.startStreamingAvatar({startSessionRequest: {sdp: localDescription, sessionId: this.sessionId}});
 
-            let receivers = this.peerConnection.getReceivers();
-            
-            
-            receivers.forEach(receiver => {
-                if('jitterBufferTarget' in receiver){
-                    receiver.jitterBufferTarget = 500;
-                }
-            });
+            // Set jitter buffer
+            if (this.configuration.jitterBuffer !== undefined){
+                let receivers = this.peerConnection.getReceivers();
+                
+                
+                receivers.forEach(receiver => {
+                    if('jitterBufferTarget' in receiver){
+                        receiver.jitterBufferTarget = this.configuration.jitterBuffer;
+                    }
+                });
+            }
 
             debug.print("Session started successfully");
 
