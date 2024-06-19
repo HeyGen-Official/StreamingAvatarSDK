@@ -79,7 +79,7 @@ export interface SubmitICECandidateRequest {
  */
 export class StreamingAvatarApi extends runtime.BaseAPI {
 
-    private eventSystem: EventTarget = new EventTarget;
+    private eventSystem: EventTarget = new EventTarget();
     private listenerMap: Map<EventType, Map<(detailData: any) => any, (ev: CustomEvent) => any>> = new Map();
 
     /**
