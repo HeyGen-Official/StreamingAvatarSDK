@@ -437,7 +437,7 @@ export class StreamingAvatarApi extends runtime.BaseAPI {
 
     }
 
-    addEventHandler<K extends EventType>(event: K, listener: (ev: EventMap[K]) => any) {
+    addEventHandler<K extends EventType>(event: K, listener: (data: any) => any) {
         let newListener = (customEv: CustomEvent) => {
             if (customEv.detail.type === event) {
                 listener(customEv.detail);
@@ -452,7 +452,7 @@ export class StreamingAvatarApi extends runtime.BaseAPI {
         this.eventSystem.addEventListener(event, newListener);
     }
 
-    removeEventHandler<K extends EventType>(event: K, listener: (ev: EventMap[K]) => any) {
+    removeEventHandler<K extends EventType>(event: K, listener: (data: any) => any) {
         const eventListeners = this.listenerMap.get(event);
         if (eventListeners) {
             const newListener = eventListeners.get(listener);
