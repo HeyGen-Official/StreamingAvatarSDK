@@ -15,19 +15,19 @@
 
 import * as runtime from '../runtime';
 import type {
-  IceRequest,
-  IceResponse,
-  NewSessionData,
-  NewSessionIceServers2,
-  NewSessionRequest,
-  NewSessionResponse,
-  Sdp,
-  StartSessionRequest,
-  StartSessionResponse,
-  StopSessionRequest,
-  StopSessionResponse,
-  TaskRequest,
-  TaskResponse,
+    IceRequest,
+    IceResponse,
+    NewSessionData,
+    NewSessionIceServers2,
+    NewSessionRequest,
+    NewSessionResponse,
+    Sdp,
+    StartSessionRequest,
+    StartSessionResponse,
+    StopSessionRequest,
+    StopSessionResponse,
+    TaskRequest,
+    TaskResponse,
 } from '../models/index';
 import {
     IceRequestFromJSON,
@@ -51,6 +51,8 @@ import {
     TaskResponseFromJSON,
     TaskResponseToJSON,
 } from '../models/index';
+import { parseEvent } from '../events/utils';
+import { EventMap, EventType } from '../events/events';
 
 export interface CreateStreamingAvatarRequest {
     newSessionRequest: NewSessionRequest;
@@ -76,6 +78,8 @@ export interface SubmitICECandidateRequest {
  * 
  */
 export class StreamingAvatarApi extends runtime.BaseAPI {
+
+    private eventSystem: EventTarget = new EventTarget;
 
     /**
      * This call is encapsulated by createAndStartAvatar, only use this for advanced applications
@@ -306,15 +310,15 @@ export class StreamingAvatarApi extends runtime.BaseAPI {
     /**
      * This call both terminates the streaming avatar session and closes the RTC connection
      */
-    async stopAvatar(requestParameters: StopSessionOperationRequest, debugStream?: (string)=>void, initOverrides?: RequestInit | runtime.InitOverrideFunction){
-        if(this.peerConnection){
+    async stopAvatar(requestParameters: StopSessionOperationRequest, debugStream?: (string) => void, initOverrides?: RequestInit | runtime.InitOverrideFunction) {
+        if (this.peerConnection) {
             this.peerConnection.close();
-        }   
-       
+        }
+
         const debug = new Debug(debugStream);
         await this.stopSession(requestParameters.stopSessionRequest.sessionId ? requestParameters : {
-            stopSessionRequest: {sessionId: this.sessionId ?? ""}
-        } , initOverrides).catch((error)=>{
+            stopSessionRequest: { sessionId: this.sessionId ?? "" }
+        }, initOverrides).catch((error) => {
             debug.print(JSON.stringify(error));
         });
         debug.print("Stopped session successfully.")
@@ -323,7 +327,7 @@ export class StreamingAvatarApi extends runtime.BaseAPI {
     /**
      * This call creates and starts a new streaming avatar session
      */
-    async createStartAvatar(requestParameters: CreateStreamingAvatarRequest, debugStream?: (string)=>void, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<NewSessionData> {
+    async createStartAvatar(requestParameters: CreateStreamingAvatarRequest, debugStream?: (string) => void, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<NewSessionData> {
         const convertToRTCIceServer = (iceServers: NewSessionIceServers2[]) => {
             const rtcs: RTCIceServer[] = [];
             iceServers.forEach(server => {
@@ -337,29 +341,39 @@ export class StreamingAvatarApi extends runtime.BaseAPI {
             return rtcs;
         }
 
-        const convertToRTCSessionDescription = (serverSdp : Sdp) => {
-            return new RTCSessionDescription({sdp: serverSdp.sdp, type: serverSdp.type as RTCSdpType})
+        const convertToRTCSessionDescription = (serverSdp: Sdp) => {
+            return new RTCSessionDescription({ sdp: serverSdp.sdp, type: serverSdp.type as RTCSdpType })
         }
 
-         const debug = new Debug(debugStream);
+        const debug = new Debug(debugStream);
 
         const onMessage = (event) => {
             const message = event.data;
-            debug.print(`STREAMING AVATAR: Received message: ${message}`);
+            if (message instanceof ArrayBuffer) {
+                const messageString = new TextDecoder().decode(message);
+                debug.print(`Received event: ${messageString}`);
+                // convert data to JSON
+                const eventMsg = parseEvent(messageString);
+                if (eventMsg != null) {
+                    this.eventSystem.dispatchEvent(eventMsg);
+                }
+            } else {
+                debug.print(`STREAMING AVATAR: Received message: ${message}`);
+            }
         }
 
-        try{
+        try {
             debug.print("Creating a new session...");
 
-            const {data} = await this.createStreamingAvatar(requestParameters, initOverrides);
+            const { data } = await this.createStreamingAvatar(requestParameters, initOverrides);
             const { sdp: serverSdp, iceServers2: iceServers } = data;
             this.sessionId = data.sessionId;
 
-            this.peerConnection = new RTCPeerConnection({iceServers: convertToRTCIceServer(iceServers)});
+            this.peerConnection = new RTCPeerConnection({ iceServers: convertToRTCIceServer(iceServers) });
 
             this.peerConnection.ontrack = (event) => {
-                
-                if ( event.track.kind === 'audio' || event.track.kind == 'video'){
+
+                if (event.track.kind === 'audio' || event.track.kind == 'video') {
                     this._mediaStream = event.streams[0];
                 }
             }
@@ -376,7 +390,7 @@ export class StreamingAvatarApi extends runtime.BaseAPI {
 
             debug.print("Session creation complete.");
 
-            if(!data){
+            if (!data) {
                 throw Error("STREAMING AVATAR: Issue with created session");
             }
 
@@ -386,28 +400,28 @@ export class StreamingAvatarApi extends runtime.BaseAPI {
 
             this.peerConnection.onicecandidate = async ({ candidate }) => {
                 if (candidate) {
-                    this.submitICECandidate({iceRequest: {sessionId: this.sessionId, candidate: {candidate: candidate.candidate, sdpMid: candidate.sdpMid, sdpMLineIndex: candidate.sdpMLineIndex, usernameFragment: candidate.usernameFragment}}})
-                    .then( async (c) => {
-                        // When ICE connection state changes, display the new state
-                        this.peerConnection.oniceconnectionstatechange = (_event) => {
-                            debugStream(`ICE connection state changed to: ${this.peerConnection.iceConnectionState}`);
-                        };
-                    }
-                    ).catch(error => {
-                        debug.print(JSON.stringify(error));
-                    });
+                    this.submitICECandidate({ iceRequest: { sessionId: this.sessionId, candidate: { candidate: candidate.candidate, sdpMid: candidate.sdpMid, sdpMLineIndex: candidate.sdpMLineIndex, usernameFragment: candidate.usernameFragment } } })
+                        .then(async (c) => {
+                            // When ICE connection state changes, display the new state
+                            this.peerConnection.oniceconnectionstatechange = (_event) => {
+                                debugStream(`ICE connection state changed to: ${this.peerConnection.iceConnectionState}`);
+                            };
+                        }
+                        ).catch(error => {
+                            debug.print(JSON.stringify(error));
+                        });
                 }
             };
 
-            await this.startStreamingAvatar({startSessionRequest: {sdp: localDescription, sessionId: this.sessionId}});
+            await this.startStreamingAvatar({ startSessionRequest: { sdp: localDescription, sessionId: this.sessionId } });
 
             // Set jitter buffer
-            if (this.configuration.jitterBuffer !== undefined){
+            if (this.configuration.jitterBuffer !== undefined) {
                 let receivers = this.peerConnection.getReceivers();
-                
-                
+
+
                 receivers.forEach(receiver => {
-                    if('jitterBufferTarget' in receiver){
+                    if ('jitterBufferTarget' in receiver) {
                         receiver.jitterBufferTarget = this.configuration.jitterBuffer;
                     }
                 });
@@ -416,13 +430,31 @@ export class StreamingAvatarApi extends runtime.BaseAPI {
             debug.print("Session started successfully");
 
             return data;
-        } catch (error){
+        } catch (error) {
             this.peerConnection.close();
         }
-       
+
     }
 
-    get mediaStream(){
+    addEventHandler<K extends EventType>(event: K, listener: (ev: EventMap[K]) => any) {
+        let newListener = (customEv: CustomEvent) => {
+            if (customEv.detail.type === event) {
+                listener(customEv.detail);
+            }
+        }
+        this.eventSystem.addEventListener(event, newListener);
+    }
+
+    removeEventHandler<K extends EventType>(event: K, listener: (ev: EventMap[K]) => any) {
+        let newListener = (customEv: CustomEvent) => {
+            if (customEv.detail.type === event) {
+                listener(customEv.detail);
+            }
+        }
+        this.eventSystem.removeEventListener(event, newListener);
+    }
+
+    get mediaStream() {
         return this._mediaStream;
     }
 
@@ -432,12 +464,12 @@ export class StreamingAvatarApi extends runtime.BaseAPI {
 class Debug {
     private _debug: (text: string) => void;
 
-    constructor(debug?: (text: string) => void){
+    constructor(debug?: (text: string) => void) {
         this._debug = debug;
     }
 
     print(text: string) {
-        if(!this._debug){
+        if (!this._debug) {
             return;
         }
 
