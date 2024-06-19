@@ -80,6 +80,7 @@ export interface SubmitICECandidateRequest {
 export class StreamingAvatarApi extends runtime.BaseAPI {
 
     private eventSystem: EventTarget = new EventTarget;
+    private listenerMap: Map<EventType, Map<(detailData: any) => any, (ev: CustomEvent) => any>> = new Map();
 
     /**
      * This call is encapsulated by createAndStartAvatar, only use this for advanced applications
@@ -436,22 +437,33 @@ export class StreamingAvatarApi extends runtime.BaseAPI {
 
     }
 
-    addEventHandler<K extends EventType>(event: K, listener: (ev: EventMap[K]) => any) {
+    addEventHandler<K extends EventType>(event: K, listener: (data: any) => any) {
         let newListener = (customEv: CustomEvent) => {
             if (customEv.detail.type === event) {
                 listener(customEv.detail);
             }
         }
+
+        if (!this.listenerMap.has(event)) {
+            this.listenerMap.set(event, new Map());
+        }
+        this.listenerMap.get(event)!.set(listener, newListener);
+
         this.eventSystem.addEventListener(event, newListener);
     }
 
-    removeEventHandler<K extends EventType>(event: K, listener: (ev: EventMap[K]) => any) {
-        let newListener = (customEv: CustomEvent) => {
-            if (customEv.detail.type === event) {
-                listener(customEv.detail);
+    removeEventHandler<K extends EventType>(event: K, listener: (data: any) => any) {
+        const eventListeners = this.listenerMap.get(event);
+        if (eventListeners) {
+            const newListener = eventListeners.get(listener);
+            if (newListener) {
+                this.eventSystem.removeEventListener(event, newListener);
+                eventListeners.delete(listener);
+                if (eventListeners.size === 0) {
+                    this.listenerMap.delete(event);
+                }
             }
         }
-        this.eventSystem.removeEventListener(event, newListener);
     }
 
     get mediaStream() {
