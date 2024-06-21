@@ -1,8 +1,9 @@
 ## streaming-avatar
 
-## Changes 1.0.7
+## Changes 1.0.9
 
-1. The API now requires a bearer auth token. API Keys will no longer be supported by this SDK as an authorization method. Please see updated instructions below on how to obtain a token.
+1. The API now supports start/stop event callbacks
+2. The API now supports setting jitter buffer target (https://developer.mozilla.org/en-US/docs/Web/API/RTCRtpReceiver/jitterBufferTarget)
 
 ## Introduction
 
