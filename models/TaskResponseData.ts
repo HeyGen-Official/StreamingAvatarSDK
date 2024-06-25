@@ -25,12 +25,18 @@ export interface TaskResponseData {
      * @memberof TaskResponseData
      */
     durationMs?: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof TaskResponseData
+     */
+    taskId?: string;
 }
 
 /**
  * Check if a given object implements the TaskResponseData interface.
  */
-export function instanceOfTaskResponseData(value: object): boolean {
+export function instanceOfTaskResponseData(value: object): value is TaskResponseData {
     return true;
 }
 
@@ -45,6 +51,7 @@ export function TaskResponseDataFromJSONTyped(json: any, ignoreDiscriminator: bo
     return {
         
         'durationMs': json['duration_ms'] == null ? undefined : json['duration_ms'],
+        'taskId': json['task_id'] == null ? undefined : json['task_id'],
     };
 }
 
@@ -55,6 +62,7 @@ export function TaskResponseDataToJSON(value?: TaskResponseData | null): any {
     return {
         
         'duration_ms': value['durationMs'],
+        'task_id': value['taskId'],
     };
 }
 

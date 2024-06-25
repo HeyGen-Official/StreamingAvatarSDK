@@ -42,7 +42,7 @@ export interface TaskRequest {
 /**
  * Check if a given object implements the TaskRequest interface.
  */
-export function instanceOfTaskRequest(value: object): boolean {
+export function instanceOfTaskRequest(value: object): value is TaskRequest {
     return true;
 }
 

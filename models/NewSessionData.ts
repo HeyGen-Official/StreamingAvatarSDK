@@ -13,18 +13,18 @@
  */
 
 import { mapValues } from '../runtime';
-import type { NewSessionIceServers2 } from './NewSessionIceServers2';
-import {
-    NewSessionIceServers2FromJSON,
-    NewSessionIceServers2FromJSONTyped,
-    NewSessionIceServers2ToJSON,
-} from './NewSessionIceServers2';
 import type { Sdp } from './Sdp';
 import {
     SdpFromJSON,
     SdpFromJSONTyped,
     SdpToJSON,
 } from './Sdp';
+import type { NewSessionIceServers2 } from './NewSessionIceServers2';
+import {
+    NewSessionIceServers2FromJSON,
+    NewSessionIceServers2FromJSONTyped,
+    NewSessionIceServers2ToJSON,
+} from './NewSessionIceServers2';
 
 /**
  * 
@@ -61,7 +61,7 @@ export interface NewSessionData {
 /**
  * Check if a given object implements the NewSessionData interface.
  */
-export function instanceOfNewSessionData(value: object): boolean {
+export function instanceOfNewSessionData(value: object): value is NewSessionData {
     return true;
 }
 

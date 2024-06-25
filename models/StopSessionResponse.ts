@@ -36,7 +36,7 @@ export interface StopSessionResponse {
 /**
  * Check if a given object implements the StopSessionResponse interface.
  */
-export function instanceOfStopSessionResponse(value: object): boolean {
+export function instanceOfStopSessionResponse(value: object): value is StopSessionResponse {
     return true;
 }
 

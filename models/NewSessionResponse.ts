@@ -43,7 +43,7 @@ export interface NewSessionResponse {
 /**
  * Check if a given object implements the NewSessionResponse interface.
  */
-export function instanceOfNewSessionResponse(value: object): boolean {
+export function instanceOfNewSessionResponse(value: object): value is NewSessionResponse {
     return true;
 }
 

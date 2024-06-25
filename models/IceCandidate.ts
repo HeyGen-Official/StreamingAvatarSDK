@@ -48,7 +48,7 @@ export interface IceCandidate {
 /**
  * Check if a given object implements the IceCandidate interface.
  */
-export function instanceOfIceCandidate(value: object): boolean {
+export function instanceOfIceCandidate(value: object): value is IceCandidate {
     return true;
 }
 

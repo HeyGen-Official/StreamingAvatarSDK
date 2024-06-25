@@ -43,7 +43,7 @@ export interface StartSessionRequest {
 /**
  * Check if a given object implements the StartSessionRequest interface.
  */
-export function instanceOfStartSessionRequest(value: object): boolean {
+export function instanceOfStartSessionRequest(value: object): value is StartSessionRequest {
     return true;
 }
 

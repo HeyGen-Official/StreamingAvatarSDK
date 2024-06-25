@@ -30,7 +30,7 @@ export interface NewSessionRequestVoice {
 /**
  * Check if a given object implements the NewSessionRequestVoice interface.
  */
-export function instanceOfNewSessionRequestVoice(value: object): boolean {
+export function instanceOfNewSessionRequestVoice(value: object): value is NewSessionRequestVoice {
     return true;
 }
 
