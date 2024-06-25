@@ -36,7 +36,7 @@ export interface StartSessionResponse {
 /**
  * Check if a given object implements the StartSessionResponse interface.
  */
-export function instanceOfStartSessionResponse(value: object): boolean {
+export function instanceOfStartSessionResponse(value: object): value is StartSessionResponse {
     return true;
 }
 

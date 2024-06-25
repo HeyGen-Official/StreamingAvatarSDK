@@ -36,7 +36,7 @@ export interface IceResponse {
 /**
  * Check if a given object implements the IceResponse interface.
  */
-export function instanceOfIceResponse(value: object): boolean {
+export function instanceOfIceResponse(value: object): value is IceResponse {
     return true;
 }
 

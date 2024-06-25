@@ -61,7 +61,7 @@ export type NewSessionRequestQualityEnum = typeof NewSessionRequestQualityEnum[k
 /**
  * Check if a given object implements the NewSessionRequest interface.
  */
-export function instanceOfNewSessionRequest(value: object): boolean {
+export function instanceOfNewSessionRequest(value: object): value is NewSessionRequest {
     return true;
 }
 

@@ -30,7 +30,7 @@ export interface StopSessionRequest {
 /**
  * Check if a given object implements the StopSessionRequest interface.
  */
-export function instanceOfStopSessionRequest(value: object): boolean {
+export function instanceOfStopSessionRequest(value: object): value is StopSessionRequest {
     return true;
 }
 

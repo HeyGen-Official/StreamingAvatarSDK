@@ -49,7 +49,7 @@ export type SdpTypeEnum = typeof SdpTypeEnum[keyof typeof SdpTypeEnum];
 /**
  * Check if a given object implements the Sdp interface.
  */
-export function instanceOfSdp(value: object): boolean {
+export function instanceOfSdp(value: object): value is Sdp {
     return true;
 }
 

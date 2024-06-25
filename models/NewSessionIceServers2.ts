@@ -48,7 +48,7 @@ export interface NewSessionIceServers2 {
 /**
  * Check if a given object implements the NewSessionIceServers2 interface.
  */
-export function instanceOfNewSessionIceServers2(value: object): boolean {
+export function instanceOfNewSessionIceServers2(value: object): value is NewSessionIceServers2 {
     return true;
 }
 
