@@ -17,6 +17,8 @@ import * as runtime from '../runtime';
 import type {
     IceRequest,
     IceResponse,
+    InterruptRequest,
+    InterruptResponse,
     NewSessionData,
     NewSessionIceServers2,
     NewSessionRequest,
@@ -34,6 +36,10 @@ import {
     IceRequestToJSON,
     IceResponseFromJSON,
     IceResponseToJSON,
+    InterruptRequestFromJSON,
+    InterruptRequestToJSON,
+    InterruptResponseFromJSON,
+    InterruptResponseToJSON,
     NewSessionRequestFromJSON,
     NewSessionRequestToJSON,
     NewSessionResponseFromJSON,
@@ -56,6 +62,10 @@ import { EventMap, EventType } from '../events/events';
 
 export interface CreateStreamingAvatarRequest {
     newSessionRequest: NewSessionRequest;
+}
+
+export interface InterruptOperationRequest {
+    interruptRequest: InterruptRequest;
 }
 
 export interface SpeakRequest {
@@ -125,6 +135,50 @@ export class StreamingAvatarApi extends runtime.BaseAPI {
      */
     async createStreamingAvatar(requestParameters: CreateStreamingAvatarRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<NewSessionResponse> {
         const response = await this.createStreamingAvatarRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Interrupt the current Streaming
+     */
+    async interruptRaw(requestParameters: InterruptOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<InterruptResponse>> {
+        if (requestParameters['interruptRequest'] == null) {
+            throw new runtime.RequiredError(
+                'interruptRequest',
+                'Required parameter "interruptRequest" was null or undefined when calling interrupt().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/v1/streaming.interrupt`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: InterruptRequestToJSON(requestParameters['interruptRequest']),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => InterruptResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Interrupt the current Streaming
+     */
+    async interrupt(requestParameters: InterruptOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<InterruptResponse> {
+        const response = await this.interruptRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

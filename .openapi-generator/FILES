@@ -4,6 +4,8 @@ index.ts
 models/IceCandidate.ts
 models/IceRequest.ts
 models/IceResponse.ts
+models/InterruptRequest.ts
+models/InterruptResponse.ts
 models/NewSessionData.ts
 models/NewSessionIceServers2.ts
 models/NewSessionRequest.ts
