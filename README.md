@@ -1,5 +1,9 @@
 ## streaming-avatar
 
+## Changes 1.0.11
+
+1. The API now supports interrupt current streaming
+
 ## Changes 1.0.9
 
 1. The API now supports start/stop event callbacks
