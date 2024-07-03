@@ -29,6 +29,8 @@ export interface ConfigurationParameters {
     jitterBuffer?: number; //value for the jitter buffer in milliseconds. Set to higher to reduce freezes. Default is undefined (no jitter buffer).
 }
 
+const DEFAULT_JITTER_BUFFER = 200;
+
 export class Configuration {
     constructor(private configuration: ConfigurationParameters = {}) {}
 
@@ -85,7 +87,11 @@ export class Configuration {
     }
 
     get jitterBuffer(): number | undefined {
-        return this.configuration.jitterBuffer;
+        const ret = this.configuration.jitterBuffer;
+        if (ret === undefined) {
+            return DEFAULT_JITTER_BUFFER;
+        }
+        return ret
     }
 }
 
