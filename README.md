@@ -1,5 +1,8 @@
 ## streaming-avatar
 
+## Changes 1.0.12
+1. The API now sets default jitter bufffer target to 200ms
+
 ## Changes 1.0.11
 
 1. The API now supports interrupt current streaming
