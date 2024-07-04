@@ -1,6 +1,11 @@
 ## streaming-avatar
 
-## Changes 1.0.12
+## Changes 1.0.14
+1. The API now supports a knowledge base parameter in the createStreamingAvatar function
+2. The API now supports chat mode in the speak function
+3. The API now supports rate and emotion (only some voices support emotion) in the voice settings in the createStreamingAvatar function
+
+## Changes 1.0.13
 1. The API now sets default jitter bufffer target to 200ms
 
 ## Changes 1.0.11
