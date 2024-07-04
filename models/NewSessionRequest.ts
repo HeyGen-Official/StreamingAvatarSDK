@@ -44,6 +44,12 @@ export interface NewSessionRequest {
      * @memberof NewSessionRequest
      */
     voice?: NewSessionRequestVoice;
+    /**
+     * 
+     * @type {string}
+     * @memberof NewSessionRequest
+     */
+    knowledgeBase?: string;
 }
 
 
@@ -78,6 +84,7 @@ export function NewSessionRequestFromJSONTyped(json: any, ignoreDiscriminator: b
         'quality': json['quality'] == null ? undefined : json['quality'],
         'avatarName': json['avatar_name'] == null ? undefined : json['avatar_name'],
         'voice': json['voice'] == null ? undefined : NewSessionRequestVoiceFromJSON(json['voice']),
+        'knowledgeBase': json['knowledge_base'] == null ? undefined : json['knowledge_base'],
     };
 }
 
@@ -90,6 +97,7 @@ export function NewSessionRequestToJSON(value?: NewSessionRequest | null): any {
         'quality': value['quality'],
         'avatar_name': value['avatarName'],
         'voice': NewSessionRequestVoiceToJSON(value['voice']),
+        'knowledge_base': value['knowledgeBase'],
     };
 }
 

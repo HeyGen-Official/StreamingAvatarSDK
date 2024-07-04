@@ -265,6 +265,16 @@ components:
             voice_id:
               type: string
               default: ""
+            rate:
+              type: float
+              default: 1.0
+            emotion:
+              type: string
+              enum: ["Excited", "Serious", "Friendly", "Soothing", "Broadcaster"]
+              default: "Excited"
+        knowledge_base:
+          type: string
+          default: ""
     ### End of related to creating new Session ###
 
     ### Start of related to starting new Session ###
@@ -336,6 +346,11 @@ components:
           type: string
         task_mode:
           type: string
+          default: "sync"
+        task_type:
+          type: string
+          enum: ["repeat", "chat"]
+          default: "repeat"
     ### End of related to sending task ###
 
     ### Start of related to Interrupt ###
@@ -362,6 +377,3 @@ components:
         message:
           type: string
   ### End of related to stop session ###
-
-
-

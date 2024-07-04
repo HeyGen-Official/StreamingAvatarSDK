@@ -37,7 +37,24 @@ export interface TaskRequest {
      * @memberof TaskRequest
      */
     taskMode?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TaskRequest
+     */
+    taskType?: TaskRequestTaskTypeEnum;
 }
+
+
+/**
+ * @export
+ */
+export const TaskRequestTaskTypeEnum = {
+    Repeat: 'repeat',
+    Chat: 'chat'
+} as const;
+export type TaskRequestTaskTypeEnum = typeof TaskRequestTaskTypeEnum[keyof typeof TaskRequestTaskTypeEnum];
+
 
 /**
  * Check if a given object implements the TaskRequest interface.
@@ -59,6 +76,7 @@ export function TaskRequestFromJSONTyped(json: any, ignoreDiscriminator: boolean
         'text': json['text'] == null ? undefined : json['text'],
         'sessionId': json['session_id'] == null ? undefined : json['session_id'],
         'taskMode': json['task_mode'] == null ? undefined : json['task_mode'],
+        'taskType': json['task_type'] == null ? undefined : json['task_type'],
     };
 }
 
@@ -71,6 +89,7 @@ export function TaskRequestToJSON(value?: TaskRequest | null): any {
         'text': value['text'],
         'session_id': value['sessionId'],
         'task_mode': value['taskMode'],
+        'task_type': value['taskType'],
     };
 }
 
