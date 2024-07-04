@@ -1,0 +1,367 @@
+openapi: 3.0.0
+info:
+  title: Streaming Avatar SDK
+  description: Heygen Streaming Avatar
+  version: 1.0.4
+  license:
+    name: MIT
+  contact:
+    name: Support
+    email: api@heygen.com
+externalDocs:
+  description: List of public HeyGen AI voices that can be used
+  url: https://docs.heygen.com/reference/list-voices-v2
+servers:
+  - url: https://api.heygen.com
+    description: Heygen api server
+tags:
+  - name: StreamingAvatar
+    description: Operations for the Streaming Avatar
+
+paths:
+  /v1/streaming.new:
+    post:
+      summary: Opens and returns a new streaming avatar session
+      description: This call is encapsulated by createAndStartAvatar, only use this for advanced applications
+      operationId: createStreamingAvatar
+      tags:
+        - StreamingAvatar
+      responses:
+        "401":
+          description: Unauthorized request, please verify your credentials
+        "400":
+          description: Bad request, please verify your creation parameters
+        "500":
+          description: Server error, please reach out to support for assistance.
+        "200":
+          description: Successfully created session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewSessionResponse"
+        default:
+          description: Error, please reach out to support for assistance.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewSessionRequest" ### Can we add better value checking on BE
+      security:
+        - bearerAuth: []
+
+  /v1/streaming.start:
+    post:
+      summary: Starts the streaming avatar session. Must be called after creation.
+      description: This call is encapsulated by createAndStartAvatar, only use this for advanced applications
+      operationId: startStreamingAvatar
+      tags:
+        - StreamingAvatar
+      responses:
+        "400":
+          description: Bad request, please verify your start parameters
+        "500":
+          description: Server error, please reach out to support for assistance.
+        "200":
+          description: Successfully started session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StartSessionResponse"
+        default:
+          description: Error, please reach out to support for assistance.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartSessionRequest"
+      security:
+        - bearerAuth: []
+
+  /v1/streaming.ice:
+    post:
+      summary: Submit the ICE candidate. Dependent on active session.
+      description: This call is encapsulated by createAndStartAvatar, only use this for advanced applications
+      operationId: submitICECandidate
+      tags:
+        - StreamingAvatar
+      responses:
+        "400":
+          description: Bad request, please reach out to support for assistance.
+        "500":
+          description: Server error, please reach out to support for assistance.
+        "200":
+          description: Successfully submitted ICE candidate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IceResponse"
+        default:
+          description: Error, please reach out to support for assistance.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IceRequest"
+      security:
+        - bearerAuth: []
+
+  /v1/streaming.task:
+    post:
+      summary: Pass text to be repeated by avatar
+      operationId: speak
+      tags:
+        - StreamingAvatar
+      responses:
+        "400":
+          description: Bad request, please close and restart session or reach out to support for assistance if issue persists.
+        "500":
+          description: Server error, please reach out to support for assistance.
+        "200":
+          description: Successfully executed task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponse"
+        default:
+          description: Error, please reach out to support for assistance.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskRequest"
+      security:
+        - bearerAuth: []
+
+  /v1/streaming.interrupt:
+    post:
+      summary: Interrupt the current Streaming
+      operationId: interrupt
+      tags:
+        - StreamingAvatar
+      responses:
+        "400":
+          description: Bad request, please close and restart session or reach out to support for assistance if issue persists.
+        "500":
+          description: Server error, please reach out to support for assistance.
+        "200":
+          description: Successfully executed task
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InterruptResponse"
+        default:
+          description: Error, please reach out to support for assistance.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InterruptRequest"
+      security:
+        - bearerAuth: [ ]
+
+  /v1/streaming.stop:
+    post:
+      summary: Stops the streaming avatar session. This endpoint has been exposed to support advanced applications. To ensure the RTC session is correctly closed, please use stopAvatar instead.
+      operationId: stopSession
+      tags:
+        - StreamingAvatar
+      responses:
+        "400":
+          description: Bad request, please reach out to support for assistance if issue persists.
+        "500":
+          description: Server error, please reach out to support for assistance.
+        "200":
+          description: Successfully stopped session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StopSessionResponse"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                session_id:
+                  type: string
+      security:
+        - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    Sdp:
+      type: object
+      properties:
+        sdp:
+          type: string
+        type:
+          type: string
+          enum: ["answer", "offer", "pranswer", "rollback"]
+    ### Related to creating new Session ###
+    NewSessionResponse:
+      type: object
+      properties:
+        code:
+          type: number
+          example: 100
+        data:
+          $ref: "#/components/schemas/NewSessionData"
+    NewSessionData:
+      type: object
+      properties:
+        session_id:
+          type: string
+          example: "12a_123"
+        sdp:
+          $ref: "#/components/schemas/Sdp"
+        ice_servers:
+          type: array
+          items:
+            type: string
+        ice_servers2:
+          type: array
+          items:
+            $ref: "#/components/schemas/NewSessionIceServers2"
+    NewSessionIceServers2:
+      type: object
+      properties:
+        credential:
+          type: string
+          example: 123as
+        credentialType:
+          type: string
+          example: password
+        username:
+          type: string
+          example: username123
+        urls:
+          type: array
+          items:
+            type: string
+            example: item
+    NewSessionRequest:
+      type: object
+      properties:
+        quality:
+          type: string
+          enum: ["low", "medium", "high"]
+          default: low
+        avatar_name:
+          type: string
+          default: ""
+        voice:
+          type: object
+          properties:
+            voice_id:
+              type: string
+              default: ""
+    ### End of related to creating new Session ###
+
+    ### Start of related to starting new Session ###
+    StartSessionResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+    StartSessionRequest:
+      type: object
+      properties:
+        sdp:
+          $ref: "#/components/schemas/Sdp"
+        session_id:
+          type: string
+    ### End of related to starting new Session ###
+
+    ### Start of related to submitting ICE candidate ###
+    IceResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+    IceRequest:
+      type: object
+      properties:
+        candidate:
+          $ref: "#/components/schemas/IceCandidate"
+        session_id:
+          type: string
+    IceCandidate:
+      type: object
+      properties:
+        candidate:
+          type: string
+        sdpMLineIndex:
+          type: number
+        sdpMid:
+          type: string
+        usernameFragment:
+          type: string
+    ### End of related to submitting ICE candidate ###
+
+    ### Start of related to sending task ###
+    TaskResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        data:
+          type: object
+          properties:
+            duration_ms:
+              type: number
+            task_id:
+              type: string
+        message:
+          type: string
+    TaskRequest:
+      type: object
+      properties:
+        text:
+          type: string
+        session_id:
+          type: string
+        task_mode:
+          type: string
+    ### End of related to sending task ###
+
+    ### Start of related to Interrupt ###
+    InterruptResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+    InterruptRequest:
+      type: object
+      properties:
+        session_id:
+          type: string
+    ### End of related to Interrupt ###
+
+    ### Start of related to stop session ###
+    StopSessionResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+  ### End of related to stop session ###
+
+
+
