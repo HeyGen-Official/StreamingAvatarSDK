@@ -25,7 +25,33 @@ export interface NewSessionRequestVoice {
      * @memberof NewSessionRequestVoice
      */
     voiceId?: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof NewSessionRequestVoice
+     */
+    rate?: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof NewSessionRequestVoice
+     */
+    emotion?: NewSessionRequestVoiceEmotionEnum;
 }
+
+
+/**
+ * @export
+ */
+export const NewSessionRequestVoiceEmotionEnum = {
+    Excited: 'Excited',
+    Serious: 'Serious',
+    Friendly: 'Friendly',
+    Soothing: 'Soothing',
+    Broadcaster: 'Broadcaster'
+} as const;
+export type NewSessionRequestVoiceEmotionEnum = typeof NewSessionRequestVoiceEmotionEnum[keyof typeof NewSessionRequestVoiceEmotionEnum];
+
 
 /**
  * Check if a given object implements the NewSessionRequestVoice interface.
@@ -45,6 +71,8 @@ export function NewSessionRequestVoiceFromJSONTyped(json: any, ignoreDiscriminat
     return {
         
         'voiceId': json['voice_id'] == null ? undefined : json['voice_id'],
+        'rate': json['rate'] == null ? undefined : json['rate'],
+        'emotion': json['emotion'] == null ? undefined : json['emotion'],
     };
 }
 
@@ -55,6 +83,8 @@ export function NewSessionRequestVoiceToJSON(value?: NewSessionRequestVoice | nu
     return {
         
         'voice_id': value['voiceId'],
+        'rate': value['rate'],
+        'emotion': value['emotion'],
     };
 }
 
