@@ -1,5 +1,8 @@
 ## streaming-avatar
 
+## Changes 1.0.15
+1. The API now returns `duration_ms` in the `avatar_stop_talking` event
+
 ## Changes 1.0.14
 1. The API now supports a knowledge base parameter in the createStreamingAvatar function
 2. The API now supports chat mode in the speak function
