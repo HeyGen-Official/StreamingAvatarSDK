@@ -14,6 +14,7 @@ export interface AvatarStartTalkingEvent extends StreamingAvatarEvent {
 export interface AvatarStopTalkingEvent extends StreamingAvatarEvent {
     type: 'avatar_stop_talking';
     task_id: string;
+    duration_ms: number;
 }
 
 export interface EventMap {
