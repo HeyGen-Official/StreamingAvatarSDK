@@ -1,4 +1,4 @@
-## streaming-avatar
+## Interactive-Avatar
 
 ## Changes 1.0.15
 1. The API now returns `duration_ms` in the `avatar_stop_talking` event
@@ -22,7 +22,7 @@
 
 ## Introduction
 
-This HeyGen Streaming Avatar SDK provides a convenient way for developers to better interface with HeyGen's Streaming Avatar. 
+This SDK provides a convenient way for developers to better interface with HeyGen's Interactive Avatar. 
 
 ## Installation 
 
@@ -35,9 +35,9 @@ To build and compile the typescript sources to javascript run install then:
 npm run build
 ```
 
-## Basic Usage
+## Implementation
 
-For an indepth demo, please refer to our [Streaming Avatar SDK demo](https://github.com/HeyGen-Official/StreamingAvatarTSDemo). 
+For demo of this SDK and how it is used when installed in an app, please refer to the following: https://github.com/HeyGen-Official/InteractiveAvatarNextJSDemo. 
 
 ```
 import { Configuration, NewSessionData, StreamingAvatarApi} from 'streaming-avatar';
@@ -75,18 +75,16 @@ curl -X POST https://api.heygen.com/v1/streaming.create_token -H "x-api-key: <ap
 
 ### Which Avatars can I use with this project?
 
-By default, there are several Public Avatars that can be used in Streaming. (AKA Streaming Avatars.) You can find the Avatar IDs for these Public Avatars by navigating to app.heygen.com/streaming-avatar and clicking 'Select Avatar'.
+By default, there are several Public Interactive Avatars that can be used. You can find the Avatar IDs for these Avatars by navigating to labs.heygen.com/interactive-avatar and clicking 'Select Avatar'.
 
-In order to use a private Avatar created under your own account in Streaming, it must be upgraded to be a Streaming Avatar. Only 1. Finetune Instant Avatars and 2. Studio Avatars are able to be upgraded to Streaming Avatars. This upgrade is a one-time fee and can be purchased by navigating to app.heygen.com/streaming-avatar and clicking 'Select Avatar'.
-
-Photo Avatars are not compatible with Streaming and cannot be used.
+You can create your own Interactive Avatar to use with this API by visiting labs.heygen.com/interactive-avatar and clicking 'Create Interactive Avatar' at the bottom of the screen.
 
 ### Which voices can I use?
 
-Most of HeyGen's AI Voices can be used with the Streaming API. To find the Voice IDs that you can use, please use the List Voices v2 endpoint from HeyGen: https://docs.heygen.com/reference/list-voices-v2
+Most of HeyGen's AI Voices can be used with the API. To find the Voice IDs that you can use, please use the List Voices v2 endpoint from HeyGen: https://docs.heygen.com/reference/list-voices-v2
 
 ### Why am I encountering issues with testing?
 
-Most likely, you are hitting your concurrent session limit. While testing the Streaming API, your account is limited to 3 concurrent sessions. Please endeavor to close unused Streaming sessions with the Close Session endpoint when they are no longer being used; they will automatically close after some minutes.
+Most likely, you are hitting your concurrent session limit. While testing this API with your Trial Token, only 3 concurrent sessions can be created. Please endeavor to close unused sessions with the Close Session endpoint when they are no longer being used; they will automatically close after some minutes.
 
 You can check how many active sessions you have open with the List Sessions endpoint: https://docs.heygen.com/reference/list-sessions
