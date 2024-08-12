@@ -26,10 +26,7 @@ export interface ConfigurationParameters {
     accessToken?: string | Promise<string> | ((name?: string, scopes?: string[]) => string | Promise<string>); // parameter for oauth2 security
     headers?: HTTPHeaders; //header params we want to use on every request
     credentials?: RequestCredentials; //value for the credentials param we want to use on each request
-    jitterBuffer?: number; //value for the jitter buffer in milliseconds. Set to higher to reduce freezes. Default is undefined (no jitter buffer).
 }
-
-const DEFAULT_JITTER_BUFFER = 200;
 
 export class Configuration {
     constructor(private configuration: ConfigurationParameters = {}) {}
@@ -84,14 +81,6 @@ export class Configuration {
 
     get credentials(): RequestCredentials | undefined {
         return this.configuration.credentials;
-    }
-
-    get jitterBuffer(): number | undefined {
-        const ret = this.configuration.jitterBuffer;
-        if (ret === undefined) {
-            return DEFAULT_JITTER_BUFFER;
-        }
-        return ret
     }
 }
 

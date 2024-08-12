@@ -12,7 +12,7 @@
  * Do not edit the class manually.
  */
 
-
+import { Room, RoomEvent, VideoPresets } from 'livekit-client';
 import * as runtime from '../runtime';
 import type {
     IceRequest,
@@ -383,65 +383,48 @@ export class StreamingAvatarApi extends runtime.BaseAPI {
      * This call creates and starts a new streaming avatar session
      */
     async createStartAvatar(requestParameters: CreateStreamingAvatarRequest, debugStream?: (string) => void, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<NewSessionData> {
-        const convertToRTCIceServer = (iceServers: NewSessionIceServers2[]) => {
-            const rtcs: RTCIceServer[] = [];
-            iceServers.forEach(server => {
-                const rtc = {
-                    urls: server.urls,
-                    username: server.username,
-                    credential: server.credential
-                }
-                rtcs.push(rtc);
-            });
-            return rtcs;
-        }
-
-        const convertToRTCSessionDescription = (serverSdp: Sdp) => {
-            return new RTCSessionDescription({ sdp: serverSdp.sdp, type: serverSdp.type as RTCSdpType })
-        }
-
         const debug = new Debug(debugStream);
-
-        const onMessage = (event) => {
-            const message = event.data;
-            if (message instanceof ArrayBuffer) {
-                const messageString = new TextDecoder().decode(message);
-                debug.print(`Received event: ${messageString}`);
-                // convert data to JSON
-                const eventMsg = parseEvent(messageString);
-                if (eventMsg != null) {
-                    this.eventSystem.dispatchEvent(eventMsg);
-                }
-            } else {
-                debug.print(`STREAMING AVATAR: Received message: ${message}`);
-            }
-        }
 
         try {
             debug.print("Creating a new session...");
 
             const { data } = await this.createStreamingAvatar(requestParameters, initOverrides);
-            const { sdp: serverSdp, iceServers2: iceServers } = data;
             this.sessionId = data.sessionId;
 
-            this.peerConnection = new RTCPeerConnection({ iceServers: convertToRTCIceServer(iceServers) });
+            const { accessToken, url } = data || {};
 
-            this.peerConnection.ontrack = (event) => {
-
-                if (event.track.kind === 'audio' || event.track.kind == 'video') {
-                    this._mediaStream = event.streams[0];
+            const room = new Room({
+                adaptiveStream: true,
+                dynacast: true,
+                videoCaptureDefaults: {
+                    resolution: VideoPresets.h720.resolution,
+                },
+            });
+            room.on(RoomEvent.DataReceived, (roomMessage) => {
+                try {
+                    const messageString = new TextDecoder().decode(roomMessage as ArrayBuffer);
+                    debug.print(`Received event: ${messageString}`);
+                    // convert data to JSON
+                    const eventMsg = parseEvent(messageString);
+                    if (eventMsg != null) {
+                        this.eventSystem.dispatchEvent(eventMsg);
+                    }
+                } catch (e) {
+                    debug.print(`STREAMING AVATAR: Received message error: ${roomMessage}`);
                 }
-            }
-
-            // When receiving a message, display it in the status element
-            this.peerConnection.ondatachannel = (event) => {
-                const dataChannel = event.channel;
-                dataChannel.onmessage = onMessage;
-            };
-
-            // Set server's SDP as remote description
-            const remoteDescription = new RTCSessionDescription(convertToRTCSessionDescription(serverSdp));
-            await this.peerConnection.setRemoteDescription(remoteDescription);
+            });
+            const mediaStream = new MediaStream();
+            room.on(RoomEvent.TrackSubscribed, (track, trackPublication) => {
+                if (trackPublication.kind === 'video' || trackPublication.kind === 'audio') {
+                    trackPublication.track?.mediaStream?.getTracks().forEach((mediaTrack) => {
+                        mediaStream.addTrack(mediaTrack);
+                    });
+                    this._mediaStream = mediaStream;
+                }
+            });
+            room.on(RoomEvent.Disconnected, () => {
+                debug.print('STREAMING AVATAR disconnected');
+            });
 
             debug.print("Session creation complete.");
 
@@ -450,45 +433,18 @@ export class StreamingAvatarApi extends runtime.BaseAPI {
             }
 
             debug.print("Starting the session...");
-            const localDescription = await this.peerConnection.createAnswer();
-            await this.peerConnection.setLocalDescription(localDescription);
 
-            this.peerConnection.onicecandidate = async ({ candidate }) => {
-                if (candidate) {
-                    this.submitICECandidate({ iceRequest: { sessionId: this.sessionId, candidate: { candidate: candidate.candidate, sdpMid: candidate.sdpMid, sdpMLineIndex: candidate.sdpMLineIndex, usernameFragment: candidate.usernameFragment } } })
-                        .then(async (c) => {
-                            // When ICE connection state changes, display the new state
-                            this.peerConnection.oniceconnectionstatechange = (_event) => {
-                                debugStream(`ICE connection state changed to: ${this.peerConnection.iceConnectionState}`);
-                            };
-                        }
-                        ).catch(error => {
-                            debug.print(JSON.stringify(error));
-                        });
-                }
-            };
+            await this.startStreamingAvatar({ startSessionRequest: { sessionId: this.sessionId } });
 
-            await this.startStreamingAvatar({ startSessionRequest: { sdp: localDescription, sessionId: this.sessionId } });
-
-            // Set jitter buffer
-            if (this.configuration.jitterBuffer !== undefined) {
-                let receivers = this.peerConnection.getReceivers();
-
-
-                receivers.forEach(receiver => {
-                    if ('jitterBufferTarget' in receiver) {
-                        receiver.jitterBufferTarget = this.configuration.jitterBuffer;
-                    }
-                });
-            }
+            // connect to room
+            await room.connect(url, accessToken);
 
             debug.print("Session started successfully");
 
             return data;
         } catch (error) {
-            this.peerConnection.close();
+            debug.print('Session start error: ' + error);
         }
-
     }
 
     addEventHandler<K extends EventType>(event: K, listener: (data: any) => any) {

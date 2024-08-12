@@ -1,24 +1,28 @@
 {
   "name": "@heygen/streaming-avatar",
-  "version": "1.0.11",
+  "version": "1.0.17",
   "description": "OpenAPI client for streaming-avatar",
   "author": "OpenAPI-Generator",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/HeyGen-Official/StreamingAvatarSDK.git"
   },
-  "main": "./dist/index.js",
+  "module": "./dist/index.js",
   "typings": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "prepare": "npm run build"
   },
   "devDependencies": {
-    "typescript": "^4.0"
+    "@types/node": "^22.2.0",
+    "typescript": "5.0.4"
   },
   "bugs": {
     "url": "https://github.com/HeyGen-Official/StreamingAvatarSDK/issues"
   },
   "homepage": "https://github.com/HeyGen-Official/StreamingAvatarSDK",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "livekit-client": "^2.4.2"
+  }
 }

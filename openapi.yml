@@ -222,6 +222,12 @@ components:
         session_id:
           type: string
           example: "12a_123"
+        access_token:
+          type: string
+          example: "1234"
+        url:
+          type: string
+          example: "wss://api.heygen.com"
         sdp:
           $ref: "#/components/schemas/Sdp"
         ice_servers:

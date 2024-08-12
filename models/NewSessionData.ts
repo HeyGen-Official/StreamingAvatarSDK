@@ -40,6 +40,18 @@ export interface NewSessionData {
     sessionId?: string;
     /**
      * 
+     * @type {string}
+     * @memberof NewSessionData
+     */
+    accessToken?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof NewSessionData
+     */
+    url?: string;
+    /**
+     * 
      * @type {Sdp}
      * @memberof NewSessionData
      */
@@ -76,6 +88,8 @@ export function NewSessionDataFromJSONTyped(json: any, ignoreDiscriminator: bool
     return {
         
         'sessionId': json['session_id'] == null ? undefined : json['session_id'],
+        'accessToken': json['access_token'] == null ? undefined : json['access_token'],
+        'url': json['url'] == null ? undefined : json['url'],
         'sdp': json['sdp'] == null ? undefined : SdpFromJSON(json['sdp']),
         'iceServers': json['ice_servers'] == null ? undefined : json['ice_servers'],
         'iceServers2': json['ice_servers2'] == null ? undefined : ((json['ice_servers2'] as Array<any>).map(NewSessionIceServers2FromJSON)),
@@ -89,6 +103,8 @@ export function NewSessionDataToJSON(value?: NewSessionData | null): any {
     return {
         
         'session_id': value['sessionId'],
+        'access_token': value['accessToken'],
+        'url': value['url'],
         'sdp': SdpToJSON(value['sdp']),
         'ice_servers': value['iceServers'],
         'ice_servers2': value['iceServers2'] == null ? undefined : ((value['iceServers2'] as Array<any>).map(NewSessionIceServers2ToJSON)),
