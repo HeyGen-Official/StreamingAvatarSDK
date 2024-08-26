@@ -7,14 +7,21 @@
     "type": "git",
     "url": "git+https://github.com/HeyGen-Official/StreamingAvatarSDK.git"
   },
-  "module": "./dist/index.js",
+  "module": "./dist/index.esm.js",
+  "main": "./dist/index.cjs.js",
   "typings": "./dist/index.d.ts",
+  "type": "module",
   "scripts": {
-    "build": "tsc",
+    "build-tsc": "tsc",
+    "build": "rollup -c",
     "prepare": "npm run build"
   },
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^26.0.1",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-typescript": "^11.1.6",
     "@types/node": "^22.2.0",
+    "rollup": "^4.20.0",
     "typescript": "5.0.4"
   },
   "bugs": {
