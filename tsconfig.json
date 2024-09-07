@@ -2,20 +2,16 @@
   "compilerOptions": {
     "declaration": true,
     "target": "es5",
-    "module": "commonjs",
+    "module": "es6",
     "moduleResolution": "node",
-    "outDir": "dist",
+    "outDir": "lib",
     "lib": [
       "es6",
       "dom",
       "es2018"
-    ],
-    "typeRoots": [
-      "node_modules/@types"
     ]
   },
-  "exclude": [
-    "dist",
-    "node_modules"
+  "include": [
+    "src/**/*.ts"
   ]
 }

@@ -1,5 +1,10 @@
 ## Interactive-Avatar
 
+## Changes 2.0.0-beta.1
+1. Added more API events.
+2. Smoother video experience.
+3. Added control for avatar listening state.
+
 ## Changes 1.0.15
 1. The API now returns `duration_ms` in the `avatar_stop_talking` event
 
@@ -40,20 +45,15 @@ npm run build
 For demo of this SDK and how it is used when installed in an app, please refer to the following: https://github.com/HeyGen-Official/InteractiveAvatarNextJSDemo. 
 
 ```
-import { Configuration, NewSessionData, StreamingAvatarApi} from 'streaming-avatar';
+import StreamingAvatar from '@heygen/streaming-avatar';
 
-const streamingAvatar = new StreamingAvatarApi(
-      new Configuration({accessToken: 'ENTER_ACCESS_TOKEN_HERE'})
-    )
+const streamingAvatar = new StreamingAvatar({token: 'ENTER_ACCESS_TOKEN_HERE'});
 
 async function main(){
-    await avatar.current.createStartAvatar(
-      { newSessionRequest: 
-        { quality: "low",
-          avatarName: avatarId, 
-          voice:{voiceId: voiceId}
-        }
-      });
+    await streamingAvatar.createStartAvatar({ 
+        quality: "low",
+        avatarName: avatarId
+    });
 }
 
 main();
@@ -78,10 +78,6 @@ curl -X POST https://api.heygen.com/v1/streaming.create_token -H "x-api-key: <ap
 By default, there are several Public Interactive Avatars that can be used. You can find the Avatar IDs for these Avatars by navigating to labs.heygen.com/interactive-avatar and clicking 'Select Avatar'.
 
 You can create your own Interactive Avatar to use with this API by visiting labs.heygen.com/interactive-avatar and clicking 'Create Interactive Avatar' at the bottom of the screen.
-
-### Which voices can I use?
-
-Most of HeyGen's AI Voices can be used with the API. To find the Voice IDs that you can use, please use the List Voices v2 endpoint from HeyGen: https://docs.heygen.com/reference/list-voices-v2
 
 ### Why am I encountering issues with testing?
 
