@@ -1,24 +1,43 @@
 {
   "name": "@heygen/streaming-avatar",
-  "version": "1.0.11",
-  "description": "OpenAPI client for streaming-avatar",
-  "author": "OpenAPI-Generator",
+  "version": "2.0.0-beta.1",
+  "description": "HeyGen SDK for interactive avatar",
+  "author": "HeyGen",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/HeyGen-Official/StreamingAvatarSDK.git"
   },
-  "main": "./dist/index.js",
-  "typings": "./dist/index.d.ts",
+  "module": "./lib/index.esm.js",
+  "main": "./lib/index.cjs.js",
+  "types": "./lib/index.d.ts",
+  "type": "module",
   "scripts": {
-    "build": "tsc",
-    "prepare": "npm run build"
+    "build": "rollup -c",
+    "prepublish": "npm run build",
+    "lint": "eslint 'src/**/*.{js,ts,tsx}' --fix",
+    "format": "prettier --write 'src/**/*.{js,ts,tsx,css,md}'"
   },
   "devDependencies": {
-    "typescript": "^4.0"
+    "@rollup/plugin-commonjs": "^26.0.1",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-typescript": "^11.1.6",
+    "@typescript-eslint/eslint-plugin": "^8.3.0",
+    "@typescript-eslint/parser": "^8.3.0",
+    "eslint": "^9.9.1",
+    "prettier": "^3.3.3",
+    "rollup": "^4.20.0",
+    "rollup-plugin-dts": "^6.1.1",
+    "typescript": "^5.5.4"
   },
   "bugs": {
     "url": "https://github.com/HeyGen-Official/StreamingAvatarSDK/issues"
   },
   "homepage": "https://github.com/HeyGen-Official/StreamingAvatarSDK",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "livekit-client": "^2.4.2"
+  },
+  "files": [
+    "lib/*"
+  ]
 }
