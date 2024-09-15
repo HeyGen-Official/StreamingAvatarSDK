@@ -108,6 +108,18 @@ export type StreamingEvents =
   | UserStartTalkingEvent
   | UserStopTalkingEvent;
 
+class APIError extends Error {
+  public status: number;
+  public responseText: string;
+
+  constructor(message: string, status: number, responseText: string) {
+    super(message);
+    this.name = 'APIError';
+    this.status = status;
+    this.responseText = responseText;
+  }
+}
+
 class StreamingAvatar {
   private eventTarget = new EventTarget();
   private readonly token: string;
@@ -203,8 +215,10 @@ class StreamingAvatar {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(
-          `API request failed with status ${response.status}: ${errorText}`,
+        throw new APIError(
+          `API request failed with status ${response.status}`,
+          response.status,
+          errorText
         );
       }
 
