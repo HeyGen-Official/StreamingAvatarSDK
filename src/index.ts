@@ -150,6 +150,7 @@ class StreamingAvatar {
     });
 
     this.room = room;
+    this.mediaStream = null;
 
     room.on(RoomEvent.DataReceived, (roomMessage) => {
       let eventMsg: StreamingEvents | null = null;
@@ -169,18 +170,33 @@ class StreamingAvatar {
 
     // Create a new MediaStream to hold tracks
     const mediaStream = new MediaStream();
+    let receiveVideoTrack = false;
+    let receiveAudioTrack = false;
     room.on(RoomEvent.TrackSubscribed, (track, trackPublication) => {
+      console.log('>>>>> room, ', trackPublication.kind);
       if (
         trackPublication.kind === "video" ||
         trackPublication.kind === "audio"
       ) {
+        if (trackPublication.kind === 'video') {
+          receiveVideoTrack = true;
+        } else if (trackPublication.kind === 'audio') {
+          receiveAudioTrack = true;
+        }
         trackPublication.track?.mediaStream
           ?.getTracks()
           .forEach((mediaTrack) => {
             mediaStream.addTrack(mediaTrack);
           });
-        this.mediaStream = mediaStream;
-        this.emit(StreamingEvents.STREAM_READY, this.mediaStream);
+console.log('>>>>> mediaStream.getVideoTracks()', mediaStream.getVideoTracks(), mediaStream.getAudioTracks())
+        if (
+          receiveVideoTrack &&
+          receiveAudioTrack &&
+          !this.mediaStream
+        ) {
+          this.mediaStream = mediaStream;
+          this.emit(StreamingEvents.STREAM_READY, this.mediaStream);
+        }
       }
     });
 
