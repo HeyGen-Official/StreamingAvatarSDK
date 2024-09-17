@@ -108,6 +108,18 @@ export type StreamingEvents =
   | UserStartTalkingEvent
   | UserStopTalkingEvent;
 
+class APIError extends Error {
+  public status: number;
+  public responseText: string;
+
+  constructor(message: string, status: number, responseText: string) {
+    super(message);
+    this.name = 'APIError';
+    this.status = status;
+    this.responseText = responseText;
+  }
+}
+
 class StreamingAvatar {
   private eventTarget = new EventTarget();
   private readonly token: string;
@@ -138,6 +150,7 @@ class StreamingAvatar {
     });
 
     this.room = room;
+    this.mediaStream = null;
 
     room.on(RoomEvent.DataReceived, (roomMessage) => {
       let eventMsg: StreamingEvents | null = null;
@@ -157,18 +170,26 @@ class StreamingAvatar {
 
     // Create a new MediaStream to hold tracks
     const mediaStream = new MediaStream();
-    room.on(RoomEvent.TrackSubscribed, (track, trackPublication) => {
-      if (
-        trackPublication.kind === "video" ||
-        trackPublication.kind === "audio"
-      ) {
-        trackPublication.track?.mediaStream
-          ?.getTracks()
-          .forEach((mediaTrack) => {
-            mediaStream.addTrack(mediaTrack);
-          });
-        this.mediaStream = mediaStream;
-        this.emit(StreamingEvents.STREAM_READY, this.mediaStream);
+    room.on(RoomEvent.TrackSubscribed, (track) => {
+      if (track.kind === "video" || track.kind === "audio") {
+        mediaStream.addTrack(track.mediaStreamTrack);
+
+        const hasVideoTrack = mediaStream.getVideoTracks().length > 0;
+        const hasAudioTrack = mediaStream.getAudioTracks().length > 0;
+        if (
+          hasVideoTrack &&
+          hasAudioTrack &&
+          !this.mediaStream
+        ) {
+          this.mediaStream = mediaStream;
+          this.emit(StreamingEvents.STREAM_READY, this.mediaStream);
+        }
+      }
+    });
+    room.on(RoomEvent.TrackUnsubscribed, (track) => {
+      const mediaTrack = track.mediaStreamTrack;
+      if (mediaTrack) {
+        mediaStream.removeTrack(mediaTrack);
       }
     });
 
@@ -203,8 +224,10 @@ class StreamingAvatar {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(
-          `API request failed with status ${response.status}: ${errorText}`,
+        throw new APIError(
+          `API request failed with status ${response.status}`,
+          response.status,
+          errorText
         );
       }
 
