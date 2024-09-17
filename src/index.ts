@@ -170,33 +170,26 @@ class StreamingAvatar {
 
     // Create a new MediaStream to hold tracks
     const mediaStream = new MediaStream();
-    let receiveVideoTrack = false;
-    let receiveAudioTrack = false;
-    room.on(RoomEvent.TrackSubscribed, (track, trackPublication) => {
-      console.log('>>>>> room, ', trackPublication.kind);
-      if (
-        trackPublication.kind === "video" ||
-        trackPublication.kind === "audio"
-      ) {
-        if (trackPublication.kind === 'video') {
-          receiveVideoTrack = true;
-        } else if (trackPublication.kind === 'audio') {
-          receiveAudioTrack = true;
-        }
-        trackPublication.track?.mediaStream
-          ?.getTracks()
-          .forEach((mediaTrack) => {
-            mediaStream.addTrack(mediaTrack);
-          });
-console.log('>>>>> mediaStream.getVideoTracks()', mediaStream.getVideoTracks(), mediaStream.getAudioTracks())
+    room.on(RoomEvent.TrackSubscribed, (track) => {
+      if (track.kind === "video" || track.kind === "audio") {
+        mediaStream.addTrack(track.mediaStreamTrack);
+
+        const hasVideoTrack = mediaStream.getVideoTracks().length > 0;
+        const hasAudioTrack = mediaStream.getAudioTracks().length > 0;
         if (
-          receiveVideoTrack &&
-          receiveAudioTrack &&
+          hasVideoTrack &&
+          hasAudioTrack &&
           !this.mediaStream
         ) {
           this.mediaStream = mediaStream;
           this.emit(StreamingEvents.STREAM_READY, this.mediaStream);
         }
+      }
+    });
+    room.on(RoomEvent.TrackUnsubscribed, (track) => {
+      const mediaTrack = track.mediaStreamTrack;
+      if (mediaTrack) {
+        mediaStream.removeTrack(mediaTrack);
       }
     });
 
