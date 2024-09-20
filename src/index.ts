@@ -136,6 +136,7 @@ class StreamingAvatar {
   private mediaStreamAudioSource: MediaStreamAudioSourceNode | null = null;
   private mediaDevicesStream: MediaStream | null = null;
   private audioRawFrame: protobuf.Type | undefined;
+  private sessionId: string | null = null;
 
   constructor({
     token,
@@ -147,6 +148,7 @@ class StreamingAvatar {
 
   public async createStartAvatar(requestData: StartAvatarRequest): Promise<any> {
     const sessionInfo = await this.newSession(requestData);
+    this.sessionId = sessionInfo.session_id;
 
     const room = new Room({
       adaptiveStream: true,
@@ -393,6 +395,12 @@ class StreamingAvatar {
       throw error;
     }
   }
+  private async createWebsocketToken(requestData: { sessionId: string }): Promise<any> {
+    return this.request("/v1/streaming.create_token", {
+      session_id: requestData.sessionId,
+      paid: true,
+    });
+  }
   private emit(eventType: string, detail?: any) {
     const event = new CustomEvent(eventType, { detail });
     this.eventTarget.dispatchEvent(event);
@@ -403,8 +411,9 @@ class StreamingAvatar {
   private async connectWebSocket () {
     // todo, create websocket session token.
 
+    const wsToken = await this.createWebsocketToken({ sessionId: this.sessionId });
     this.webSocket = new WebSocket(
-      `wss://api.heygen.com/v1/ws/streaming.chat`,
+      `wss://api.heygen.com/v1/ws/streaming.chat?session_id=${this.sessionId}&session_token=${wsToken.token}`,
     );
     this.webSocket.addEventListener('message', (event) => {
       // handleWebSocketMessage(event);
