@@ -409,8 +409,6 @@ class StreamingAvatar {
     return `${this.basePath}${endpoint}`;
   }
   private async connectWebSocket () {
-    // todo, create websocket session token.
-
     const wsToken = await this.createWebsocketToken({ sessionId: this.sessionId });
     this.webSocket = new WebSocket(
       `wss://api.heygen.com/v1/ws/streaming.chat?session_id=${this.sessionId}&session_token=${wsToken.token}`,
