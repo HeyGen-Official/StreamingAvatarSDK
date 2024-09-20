@@ -101,7 +101,7 @@ export interface UserStopTalkingEvent {
   type: StreamingEvents.USER_STOP;
 }
 
-export type StreamingEvents =
+export type StreamingEventTypes =
   | StreamingStartTalkingEvent
   | StreamingStopTalkingEvent
   | StreamingTalkingMessageEvent
@@ -162,12 +162,12 @@ class StreamingAvatar {
     this.mediaStream = null;
 
     room.on(RoomEvent.DataReceived, (roomMessage) => {
-      let eventMsg: StreamingEvents | null = null;
+      let eventMsg: StreamingEventTypes | null = null;
       try {
         const messageString = new TextDecoder().decode(
           roomMessage as ArrayBuffer,
         );
-        eventMsg = JSON.parse(messageString) as StreamingEvents;
+        eventMsg = JSON.parse(messageString) as StreamingEventTypes;
       } catch (e) {
         console.error(e);
       }
@@ -232,7 +232,7 @@ class StreamingAvatar {
       return;
     }
 
-    this.audioContext = new (window.AudioContext || window.webkitAudioContext)({
+    this.audioContext = new window.AudioContext({
       latencyHint: 'interactive',
       sampleRate: 16000,
     });
