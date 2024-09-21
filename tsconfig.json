@@ -9,7 +9,9 @@
       "es6",
       "dom",
       "es2018"
-    ]
+    ],
+    "resolveJsonModule": true,
+    "esModuleInterop": true
   },
   "include": [
     "src/**/*.ts"

@@ -5,6 +5,9 @@
 2. Smoother video experience.
 3. Added control for avatar listening state.
 
+## Changes 2.0
+1. Added support for voice chat.
+
 ## Changes 1.0.15
 1. The API now returns `duration_ms` in the `avatar_stop_talking` event
 
