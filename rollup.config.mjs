@@ -22,6 +22,6 @@ export default [
       commonjs(),
       typescript(),
     ],
-    external: ['livekit-client', 'protobufjs']
+    external: ['livekit-client', 'protobufjs', 'protobufjs/light']
   }
 ];

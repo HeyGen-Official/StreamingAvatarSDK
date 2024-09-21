@@ -1,6 +1,5 @@
 import { Room, RoomEvent, VideoPresets } from "livekit-client";
 import protobuf from "protobufjs";
-import pipecatJSON from "./pipecat.json";
 import { convertFloat32ToS16PCM, sleep } from "./utils";
 
 export interface StreamingAvatarApiConfig {
@@ -59,6 +58,7 @@ export enum StreamingEvents {
   USER_END_MESSAGE = 'user_end_message',
   USER_START = 'user_start',
   USER_STOP = 'user_stop',
+  USER_SILENCE = 'user_silence',
   STREAM_READY = 'stream_ready',
   STREAM_DISCONNECTED = 'stream_disconnected',
 }
@@ -94,22 +94,30 @@ export interface UserTalkingEndEvent extends EventData {
   type: StreamingEvents.USER_END_MESSAGE;
 }
 
-export interface UserStartTalkingEvent {
-  type: StreamingEvents.USER_START;
-}
-export interface UserStopTalkingEvent {
-  type: StreamingEvents.USER_STOP;
-}
-
-export type StreamingEventTypes =
+type StreamingEventTypes =
   | StreamingStartTalkingEvent
   | StreamingStopTalkingEvent
   | StreamingTalkingMessageEvent
   | StreamingTalkingEndEvent
   | UserTalkingMessageEvent
-  | UserTalkingEndEvent
-  | UserStartTalkingEvent
-  | UserStopTalkingEvent;
+  | UserTalkingEndEvent;
+
+interface WebsocketBaseEvent {
+  [key: string]: unknown;
+}
+interface UserStartTalkingEvent extends WebsocketBaseEvent {
+  event_type: StreamingEvents.USER_START;
+}
+interface UserStopTalkingEvent extends WebsocketBaseEvent {
+  event_type: StreamingEvents.USER_STOP;
+}
+interface UserSilenceEvent extends WebsocketBaseEvent {
+  event_type: StreamingEvents.USER_SILENCE;
+  silence_times: number;
+  count_down: number;
+}
+
+type StreamingWebSocketEventTypes = UserStartTalkingEvent | UserStopTalkingEvent | UserSilenceEvent;
 
 class APIError extends Error {
   public status: number;
@@ -131,7 +139,7 @@ class StreamingAvatar {
   private readonly basePath: string;
   private eventTarget = new EventTarget();
   private audioContext: AudioContext | null = null;
-  private webSocket: WebSocket | null = null;
+  private webSocket: WebSocket = null;
   private scriptProcessor: ScriptProcessorNode | null = null;
   private mediaStreamAudioSource: MediaStreamAudioSourceNode | null = null;
   private mediaDevicesStream: MediaStream | null = null;
@@ -275,10 +283,10 @@ class StreamingAvatar {
       // sleep 2s. though room has been connected, but the stream may not be ready.
       await sleep(2000);
     } catch (e) {
-      //
+      console.error(e)
     }
   }
-  public clearVoiceChat () {
+  public closeVoiceChat () {
     try {
       if (this.audioContext) {
         this.audioContext = null;
@@ -305,7 +313,9 @@ class StreamingAvatar {
       avatar_name: requestData.avatarName,
       quality: requestData.quality,
       knowledge_base_id: requestData.knowledgeId,
-      voice: requestData.voice,
+      voice: {
+        voice_id: requestData.voice?.voiceId,
+      },
       version: "v2",
       video_encoding: "H264",
     });
@@ -353,7 +363,7 @@ class StreamingAvatar {
 
   public async stopAvatar(requestData: StopAvatarRequest): Promise<any> {
     // clear some resources
-    this.clearVoiceChat();
+    this.closeVoiceChat();
     return this.request("/v1/streaming.stop", {
       session_id: requestData.sessionId,
     });
@@ -369,7 +379,7 @@ class StreamingAvatar {
     return this;
   }
 
-  private async request(path: string, params: CommonRequest): Promise<any> {
+  private async request(path: string, params: CommonRequest, config?: any): Promise<any> {
     try {
       const response = await fetch(this.getRequestUrl(path), {
         method: "POST",
@@ -395,12 +405,7 @@ class StreamingAvatar {
       throw error;
     }
   }
-  private async createWebsocketToken(requestData: { sessionId: string }): Promise<any> {
-    return this.request("/v1/streaming.create_token", {
-      session_id: requestData.sessionId,
-      paid: true,
-    });
-  }
+
   private emit(eventType: string, detail?: any) {
     const event = new CustomEvent(eventType, { detail });
     this.eventTarget.dispatchEvent(event);
@@ -409,12 +414,18 @@ class StreamingAvatar {
     return `${this.basePath}${endpoint}`;
   }
   private async connectWebSocket () {
-    const wsToken = await this.createWebsocketToken({ sessionId: this.sessionId });
-    this.webSocket = new WebSocket(
-      `wss://api.heygen.com/v1/ws/streaming.chat?session_id=${this.sessionId}&session_token=${wsToken.token}`,
-    );
+    this.webSocket = new WebSocket(`wss://api.heygen.com/v1/ws/streaming.chat?session_id=${this.sessionId}&session_token=${this.token}`);
     this.webSocket.addEventListener('message', (event) => {
-      // handleWebSocketMessage(event);
+      let eventData: StreamingWebSocketEventTypes | null = null;
+      try {
+        eventData = JSON.parse(event.data);
+      } catch (e) {
+        console.error(e);
+      }
+      if (!eventData) {
+        return;
+      }
+      this.emit(eventData.event_type, eventData);
     });
     this.webSocket.addEventListener('close', (event) => {
       console.log('WebSocket closed.', event.code, event.reason);
@@ -434,8 +445,12 @@ class StreamingAvatar {
   }
   private async loadAudioRawFrame () {
     if (!this.audioRawFrame) {
-      const root = protobuf.Root.fromJSON(pipecatJSON);
-      this.audioRawFrame = root.lookupType("pipecat.Frame");
+      protobuf.load('https://static.heygen.ai/static/streaming.proto', (err, root) => {
+        if (err) {
+          throw err;
+        }
+        this.audioRawFrame = root?.lookupType('pipecat.Frame');
+      });
     }
   }
 }
