@@ -185,7 +185,6 @@ class StreamingAvatar {
       this.emit(eventMsg.type, eventMsg);
     });
 
-    // Create a new MediaStream to hold tracks
     const mediaStream = new MediaStream();
     room.on(RoomEvent.TrackSubscribed, (track) => {
       if (track.kind === "video" || track.kind === "audio") {
@@ -222,15 +221,8 @@ class StreamingAvatar {
 
     await room.connect(sessionInfo.url, sessionInfo.access_token);
 
-    // try to connect websocket. it's a basic/optional requirement.
     await this.connectWebSocket();
     await this.loadAudioRawFrame();
-    // todo, start voice chat
-    try {
-      await this.startVoiceChat();
-    } catch (e) {
-      //
-    }
 
     return sessionInfo;
   }
@@ -280,7 +272,7 @@ class StreamingAvatar {
         this.webSocket?.send(encodedFrame);
       };
 
-      // sleep 2s. though room has been connected, but the stream may not be ready.
+      // though room has been connected, but the stream may not be ready.
       await sleep(2000);
     } catch (e) {
       console.error(e)
@@ -318,6 +310,7 @@ class StreamingAvatar {
       },
       version: "v2",
       video_encoding: "H264",
+      source: 'sdk',
     });
   }
   public async startSession(requestData: { sessionId: string }): Promise<any> {
@@ -421,24 +414,19 @@ class StreamingAvatar {
         eventData = JSON.parse(event.data);
       } catch (e) {
         console.error(e);
-      }
-      if (!eventData) {
         return;
       }
       this.emit(eventData.event_type, eventData);
     });
     this.webSocket.addEventListener('close', (event) => {
-      console.log('WebSocket closed.', event.code, event.reason);
       this.webSocket = null;
     });
     return new Promise((resolve, reject) => {
       this.webSocket?.addEventListener('error', (event) => {
-        console.error('WebSocket failed:', event);
         this.webSocket = null;
         reject(event);
       });
       this.webSocket?.addEventListener('open', () => {
-        console.log('WebSocket established.');
         resolve(true);
       });
     });
