@@ -27,21 +27,8 @@ export interface StartAvatarResponse {
   session_duration_limit: number
 }
 
-export interface StartSessionRequest {
-  sessionId: string;
-}
-
 export interface SpeakRequest {
   text: string;
-  sessionId: string;
-}
-
-export interface InterruptRequest {
-  sessionId: string;
-}
-
-export interface StopAvatarRequest {
-  sessionId: string;
 }
 
 export interface CommonRequest {
@@ -217,7 +204,7 @@ class StreamingAvatar {
       await room.prepareConnection(sessionInfo.url, sessionInfo.access_token);
     } catch (error) {}
 
-    await this.startSession({ sessionId: sessionInfo.session_id });
+    await this.startSession();
 
     await room.connect(sessionInfo.url, sessionInfo.access_token);
 
@@ -313,9 +300,9 @@ class StreamingAvatar {
       source: 'sdk',
     });
   }
-  public async startSession(requestData: { sessionId: string }): Promise<any> {
+  public async startSession(): Promise<any> {
     return this.request("/v1/streaming.start", {
-      session_id: requestData.sessionId,
+      session_id: this.sessionId,
     });
   }
   public async speak(requestData: SpeakRequest): Promise<any> {
@@ -332,33 +319,33 @@ class StreamingAvatar {
     }
     return this.request("/v1/streaming.task", {
       text: requestData.text,
-      session_id: requestData.sessionId,
+      session_id: this.sessionId,
       task_mode: 'async',
       task_type: 'talk',
     });
   }
 
-  public async startListening(requestData: {sessionId: string}): Promise<any> {
+  public async startListening(): Promise<any> {
     return this.request("/v1/streaming.start_listening", {
-      session_id: requestData.sessionId,
+      session_id: this.sessionId,
     });
   }
-  public async stopListening(requestData: {sessionId: string}): Promise<any> {
+  public async stopListening(): Promise<any> {
     return this.request("/v1/streaming.stop_listening", {
-      session_id: requestData.sessionId,
+      session_id: this.sessionId,
     });
   }
-  public async interrupt(requestData: InterruptRequest): Promise<any> {
+  public async interrupt(): Promise<any> {
     return this.request("/v1/streaming.interrupt", {
-      session_id: requestData.sessionId,
+      session_id: this.sessionId,
     });
   }
 
-  public async stopAvatar(requestData: StopAvatarRequest): Promise<any> {
+  public async stopAvatar(): Promise<any> {
     // clear some resources
     this.closeVoiceChat();
     return this.request("/v1/streaming.stop", {
-      session_id: requestData.sessionId,
+      session_id: this.sessionId,
     });
   }
 
