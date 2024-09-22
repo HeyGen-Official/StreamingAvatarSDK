@@ -48,18 +48,28 @@ npm run build
 For demo of this SDK and how it is used when installed in an app, please refer to the following: https://github.com/HeyGen-Official/InteractiveAvatarNextJSDemo. 
 
 ```
-import StreamingAvatar from '@heygen/streaming-avatar';
+import StreamingAvatar, { AvatarQuality, StreamingEvents } from '@heygen/streaming-avatar';
 
-const streamingAvatar = new StreamingAvatar({token: 'ENTER_ACCESS_TOKEN_HERE'});
+async function startChatCreation(){
+    const streamingAvatar = new StreamingAvatar({token: 'ENTER_ACCESS_TOKEN_HERE'});
 
-async function main(){
-    await streamingAvatar.createStartAvatar({ 
-        quality: "low",
-        avatarName: avatarId
+    // some events
+    streamingAvatar.on(StreamingEvents.AVATAR_START_TALKING, (e) => {});
+    streamingAvatar.on(StreamingEvents.STREAM_DISCONNECTED, () => {});
+    streamingAvatar.on(StreamingEvents.STREAM_READY, (event) => {});
+
+    const sessionInfo = await streamingAvatar.createStartAvatar({ 
+        quality: AvatarQuality.Low,,
+        avatarName: avatarId,
+        knowledgeId: knowledgeId
     });
+    
+    // switch to voice chat
+    await streamingAvatar.startVoiceChat();
 }
 
-main();
+// In voice chat mode, we will record your voice. In text mode, please use the speak method.
+streamingAvatar.speak({ text: text });
 
 ```
 
