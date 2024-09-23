@@ -12,11 +12,23 @@ export enum AvatarQuality {
   Medium = 'medium',
   High = 'high',
 }
+export enum VoiceEmotion {
+  EXCITED = 'excited',
+  SERIOUS = 'serious',
+  FRIENDLY = 'friendly',
+  SOOTHING = 'soothing',
+  BROADCASTER = 'broadcaster',
+}
 export interface StartAvatarRequest {
   quality?: AvatarQuality;
   avatarName: string;
-  voice?: { voiceId?: string };
+  voice?: {
+    voiceId?: string
+    rate?: number;
+    emotion?: VoiceEmotion;
+  };
   knowledgeId?: string;
+  language?: string;
 }
 
 export interface StartAvatarResponse {
@@ -131,12 +143,13 @@ class StreamingAvatar {
   private readonly basePath: string;
   private eventTarget = new EventTarget();
   private audioContext: AudioContext | null = null;
-  private webSocket: WebSocket = null;
+  private webSocket: globalThis.WebSocket = null;
   private scriptProcessor: ScriptProcessorNode | null = null;
   private mediaStreamAudioSource: MediaStreamAudioSourceNode | null = null;
   private mediaDevicesStream: MediaStream | null = null;
   private audioRawFrame: protobuf.Type | undefined;
   private sessionId: string | null = null;
+  private language: string | undefined;
 
   constructor({
     token,
@@ -149,6 +162,7 @@ class StreamingAvatar {
   public async createStartAvatar(requestData: StartAvatarRequest): Promise<any> {
     const sessionInfo = await this.newSession(requestData);
     this.sessionId = sessionInfo.session_id;
+    this.language = requestData.language;
 
     const room = new Room({
       adaptiveStream: true,
@@ -299,7 +313,10 @@ class StreamingAvatar {
       knowledge_base_id: requestData.knowledgeId,
       voice: {
         voice_id: requestData.voice?.voiceId,
+        rate: requestData.voice?.rate,
+        emotion: requestData.voice?.emotion,
       },
+      language: requestData.language,
       version: "v2",
       video_encoding: "H264",
       source: 'sdk',
@@ -401,7 +418,11 @@ class StreamingAvatar {
     return `${this.basePath}${endpoint}`;
   }
   private async connectWebSocket () {
-    this.webSocket = new WebSocket(`wss://api.heygen.com/v1/ws/streaming.chat?session_id=${this.sessionId}&session_token=${this.token}`);
+    let websocketUrl = `wss://api.heygen.com/v1/ws/streaming.chat?session_id=${this.sessionId}&session_token=${this.token}`;
+    if (this.language) {
+      websocketUrl += `&stt_language=${this.language}`;
+    }
+    this.webSocket = new WebSocket(websocketUrl);
     this.webSocket.addEventListener('message', (event) => {
       let eventData: StreamingWebSocketEventTypes | null = null;
       try {
