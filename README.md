@@ -64,12 +64,13 @@ async function startChatCreation(){
         knowledgeId: knowledgeId
     });
     
-    // switch to voice chat
+    // switch to voice chat. in this mode, we will record your voice and keep chatting with avatar in real time.
     await streamingAvatar.startVoiceChat();
 }
 
-// In voice chat mode, we will record your voice. In text mode, please use the speak method.
+// In text mode, please use the speak method (Default TALK type).
 streamingAvatar.speak({ text: text });
+streamingAvatar.speak({ text: text, task_type: TaskType.REPEAT })
 
 ```
 

@@ -27,8 +27,13 @@ export interface StartAvatarResponse {
   session_duration_limit: number
 }
 
+export enum TaskType {
+  TALK = 'talk',
+  REPEAT = 'repeat',
+}
 export interface SpeakRequest {
   text: string;
+  task_type?: TaskType;
 }
 
 export interface CommonRequest {
@@ -306,8 +311,10 @@ class StreamingAvatar {
     });
   }
   public async speak(requestData: SpeakRequest): Promise<any> {
+    requestData.task_type = requestData.task_type || TaskType.TALK;
     // try to use websocket first
-    if (this.webSocket && this.audioRawFrame) {
+    // only support talk task
+    if (this.webSocket && this.audioRawFrame && requestData.task_type === TaskType.TALK) {
       const frame = this.audioRawFrame?.create({
         text: {
           text: requestData.text,
@@ -321,7 +328,7 @@ class StreamingAvatar {
       text: requestData.text,
       session_id: this.sessionId,
       task_mode: 'async',
-      task_type: 'talk',
+      task_type: requestData.task_type,
     });
   }
 
