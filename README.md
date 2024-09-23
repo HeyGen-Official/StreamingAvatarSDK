@@ -61,7 +61,13 @@ async function startChatCreation(){
     const sessionInfo = await streamingAvatar.createStartAvatar({ 
         quality: AvatarQuality.Low,,
         avatarName: avatarId,
-        knowledgeId: knowledgeId
+        knowledgeId: knowledgeId,
+        voice: {
+          voiceId: voiceId,
+          rate: 1.5, // 0.5 ~ 1.5
+          emotion: VoiceEmotion.EXCITED,
+        },
+        language: language,
     });
     
     // switch to voice chat. in this mode, we will record your voice and keep chatting with avatar in real time.
