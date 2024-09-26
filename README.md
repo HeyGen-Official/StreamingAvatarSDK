@@ -1,12 +1,12 @@
 ## Interactive-Avatar
 
+## Changes 2.0
+1. Added support for voice chat.
+
 ## Changes 2.0.0-beta.1
 1. Added more API events.
 2. Smoother video experience.
 3. Added control for avatar listening state.
-
-## Changes 2.0
-1. Added support for voice chat.
 
 ## Changes 1.0.15
 1. The API now returns `duration_ms` in the `avatar_stop_talking` event
@@ -61,7 +61,8 @@ async function startChatCreation(){
     const sessionInfo = await streamingAvatar.createStartAvatar({ 
         quality: AvatarQuality.Low,,
         avatarName: avatarId,
-        knowledgeId: knowledgeId,
+        knowledgeId: knowledgeId, // from labs.heygen.com
+        // knowledgeBase: knowledgeBase, // your customized prompt content
         voice: {
           voiceId: voiceId,
           rate: 1.5, // 0.5 ~ 1.5
@@ -76,12 +77,25 @@ async function startChatCreation(){
 
 // In text mode, please use the speak method (Default TALK type).
 streamingAvatar.speak({ text: text });
+
+// Please note, you can use the repeat method in voice chat, but only the REPEAT type is supported in this mode.
 streamingAvatar.speak({ text: text, task_type: TaskType.REPEAT })
 
+// close voice chat, will stop recording your voice.
+streamingAvatar.closeVoiceChat();
+
+// close the session
+streamingAvatar.stopAvatar();
+
+// interrupt the avatar's talking
+streamingAvatar.interrupt();
+
+// it's helpful in text mode. `startListening` will let the avatar switch to listening state.
+streamingAvatar.startListening();
+streamingAvatar.stopListening();
 ```
 
 ## Troubleshooting FAQ
-
 
 ### How do I get an Access token Key?
 

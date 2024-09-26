@@ -29,6 +29,7 @@ export interface StartAvatarRequest {
   };
   knowledgeId?: string;
   language?: string;
+  knowledgeBase?: string;
 }
 
 export interface StartAvatarResponse {
@@ -227,9 +228,6 @@ class StreamingAvatar {
 
     await room.connect(sessionInfo.url, sessionInfo.access_token);
 
-    await this.connectWebSocket();
-    await this.loadAudioRawFrame();
-
     return sessionInfo;
   }
 
@@ -238,11 +236,14 @@ class StreamingAvatar {
       return;
     }
 
-    this.audioContext = new window.AudioContext({
-      latencyHint: 'interactive',
-      sampleRate: 16000,
-    });
     try {
+      await this.loadAudioRawFrame();
+      await this.connectWebSocket();
+
+      this.audioContext = new window.AudioContext({
+        latencyHint: 'interactive',
+        sampleRate: 16000,
+      });
       const devicesStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           sampleRate: 16000,
@@ -281,7 +282,8 @@ class StreamingAvatar {
       // though room has been connected, but the stream may not be ready.
       await sleep(2000);
     } catch (e) {
-      console.error(e)
+      console.error(e);
+      throw e;
     }
   }
   public closeVoiceChat () {
@@ -301,6 +303,9 @@ class StreamingAvatar {
         this.mediaDevicesStream?.getTracks()?.forEach((track) => track.stop());
         this.mediaDevicesStream = null;
       }
+      if (this.webSocket) {
+        this.webSocket.close();
+      }
     } catch (e) {}
   }
 
@@ -311,6 +316,7 @@ class StreamingAvatar {
       avatar_name: requestData.avatarName,
       quality: requestData.quality,
       knowledge_base_id: requestData.knowledgeId,
+      knowledge_base: requestData.knowledgeBase,
       voice: {
         voice_id: requestData.voice?.voiceId,
         rate: requestData.voice?.rate,
