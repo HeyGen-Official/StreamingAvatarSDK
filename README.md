@@ -59,7 +59,7 @@ async function startChatCreation(){
     streamingAvatar.on(StreamingEvents.STREAM_DISCONNECTED, () => {});
     streamingAvatar.on(StreamingEvents.STREAM_READY, (event) => {});
 
-    const sessionInfo = await streamingAvatar.createStartAvatar({ 
+    const sessionInfo = await streamingAvatar.createStartAvatar({
         quality: AvatarQuality.Low,
         avatarName: avatarId,
         knowledgeId: knowledgeId, // from labs.heygen.com
@@ -73,7 +73,9 @@ async function startChatCreation(){
     });
     
     // switch to voice chat. in this mode, we will record your voice and keep chatting with avatar in real time.
-    await streamingAvatar.startVoiceChat();
+    await streamingAvatar.startVoiceChat({
+      useSilencePrompt: true, // the default is false. true means you will receive silence prompts.
+    });
 }
 
 // In text mode, please use the speak method (Default TALK type).
