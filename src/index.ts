@@ -231,14 +231,15 @@ class StreamingAvatar {
     return sessionInfo;
   }
 
-  public async startVoiceChat () {
+  public async startVoiceChat (requestData: { useSilencePrompt?: boolean } = {}) {
+    requestData.useSilencePrompt = requestData.useSilencePrompt || false;
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       return;
     }
 
     try {
       await this.loadAudioRawFrame();
-      await this.connectWebSocket();
+      await this.connectWebSocket({ useSilencePrompt: requestData.useSilencePrompt });
 
       this.audioContext = new window.AudioContext({
         latencyHint: 'interactive',
@@ -423,8 +424,8 @@ class StreamingAvatar {
   private getRequestUrl(endpoint: string): string {
     return `${this.basePath}${endpoint}`;
   }
-  private async connectWebSocket () {
-    let websocketUrl = `wss://api.heygen.com/v1/ws/streaming.chat?session_id=${this.sessionId}&session_token=${this.token}`;
+  private async connectWebSocket (requestData: { useSilencePrompt: boolean }) {
+    let websocketUrl = `wss://${new URL(this.basePath).hostname}/v1/ws/streaming.chat?session_id=${this.sessionId}&session_token=${this.token}&silence_response=${requestData.useSilencePrompt}`;
     if (this.language) {
       websocketUrl += `&stt_language=${this.language}`;
     }
