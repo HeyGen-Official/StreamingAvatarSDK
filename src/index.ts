@@ -1,6 +1,7 @@
 import { Room, RoomEvent, VideoPresets } from "livekit-client";
 import protobuf from "protobufjs";
 import { convertFloat32ToS16PCM, sleep } from "./utils";
+import jsonDescriptor from "./pipecat.json";
 
 export interface StreamingAvatarApiConfig {
   token: string;
@@ -455,12 +456,8 @@ class StreamingAvatar {
   }
   private async loadAudioRawFrame () {
     if (!this.audioRawFrame) {
-      protobuf.load('https://static.heygen.ai/static/streaming.proto', (err, root) => {
-        if (err) {
-          throw err;
-        }
-        this.audioRawFrame = root?.lookupType('pipecat.Frame');
-      });
+      const root = protobuf.Root.fromJSON(jsonDescriptor);
+      this.audioRawFrame = root?.lookupType('pipecat.Frame');
     }
   }
 }
