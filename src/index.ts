@@ -45,9 +45,15 @@ export enum TaskType {
   TALK = 'talk',
   REPEAT = 'repeat',
 }
+export enum TaskMode {
+  SYNC = 'sync',
+  ASYNC = 'async',
+}
 export interface SpeakRequest {
   text: string;
-  task_type?: TaskType;
+  task_type?: TaskType; // should use camelCase
+  taskType?: TaskType;
+  taskMode?: TaskMode;
 }
 
 export interface CommonRequest {
@@ -336,10 +342,12 @@ class StreamingAvatar {
     });
   }
   public async speak(requestData: SpeakRequest): Promise<any> {
-    requestData.task_type = requestData.task_type || TaskType.TALK;
+    requestData.taskType = requestData.taskType || requestData.task_type || TaskType.TALK;
+    requestData.taskMode = requestData.taskMode || TaskMode.ASYNC;
+
     // try to use websocket first
     // only support talk task
-    if (this.webSocket && this.audioRawFrame && requestData.task_type === TaskType.TALK) {
+    if (this.webSocket && this.audioRawFrame && requestData.task_type === TaskType.TALK && requestData.taskMode !== TaskMode.SYNC) {
       const frame = this.audioRawFrame?.create({
         text: {
           text: requestData.text,
@@ -352,8 +360,8 @@ class StreamingAvatar {
     return this.request("/v1/streaming.task", {
       text: requestData.text,
       session_id: this.sessionId,
-      task_mode: 'async',
-      task_type: requestData.task_type,
+      task_mode: requestData.taskMode,
+      task_type: requestData.taskType,
     });
   }
 

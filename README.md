@@ -79,7 +79,7 @@ async function startChatCreation(){
 }
 
 // In text mode, please use the speak method (Default TALK type).
-streamingAvatar.speak({ text: text, task_type: TaskType.REPEAT });
+streamingAvatar.speak({ text: text, task_type: TaskType.REPEAT, taskMode: TaskMode.SYNC });
 
 // Please note, you can use the speak method in voice chat, but only the TALK type is supported in voice chat mode.
 streamingAvatar.speak({ text: text })
