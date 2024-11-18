@@ -31,6 +31,7 @@ export interface StartAvatarRequest {
   knowledgeId?: string;
   language?: string;
   knowledgeBase?: string;
+  disableIdleTimeout?: boolean;
 }
 
 export interface StartAvatarResponse {
@@ -334,6 +335,7 @@ class StreamingAvatar {
       version: "v2",
       video_encoding: "H264",
       source: 'sdk',
+      disable_idle_timeout: requestData.disableIdleTimeout,
     });
   }
   public async startSession(): Promise<any> {
