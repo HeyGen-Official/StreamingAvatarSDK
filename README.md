@@ -70,6 +70,7 @@ async function startChatCreation(){
           emotion: VoiceEmotion.EXCITED,
         },
         language: language,
+        // disableIdleTimeout: false, // Default is false; enable cautiously.
     });
     
     // switch to voice chat. in this mode, we will record your voice and keep chatting with avatar in real time.
