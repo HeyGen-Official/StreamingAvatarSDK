@@ -165,6 +165,7 @@ class StreamingAvatar {
   private sessionId: string | null = null;
   private language: string | undefined;
   private userAudioWebsocketPath: string | undefined;
+  private realtimeEndpoint: string | undefined;
 
   constructor({
     token,
@@ -182,6 +183,7 @@ class StreamingAvatar {
     const sessionInfo = await this.newSession(requestData);
     this.sessionId = sessionInfo.session_id;
     this.language = requestData.language;
+    this.realtimeEndpoint = sessionInfo.realtime_endpoint;
 
     const room = new Room({
       adaptiveStream: true,
@@ -466,8 +468,8 @@ class StreamingAvatar {
   }
   private async connectWebSocket(requestData: { useSilencePrompt: boolean }) {
     let websocketUrl = this.userAudioWebsocketPath
-      ? `${this.userAudioWebsocketPath}?session_id=${this.sessionId}&session_token=${this.token}`
-      : `${this.basePath}/streaming.chat?session_id=${this.sessionId}&session_token=${this.token}&silence_response=${requestData.useSilencePrompt}`;
+      ? `${this.userAudioWebsocketPath}?session_id=${this.sessionId}&session_token=${this.token}&realtime_endpoint=${encodeURIComponent(this.realtimeEndpoint)}`
+      : `${this.basePath}/v1/ws/streaming.chat?session_id=${this.sessionId}&session_token=${this.token}&silence_response=${requestData.useSilencePrompt}`;
     if (this.language) {
       websocketUrl += `&stt_language=${this.language}`;
     }
