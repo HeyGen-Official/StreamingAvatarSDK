@@ -68,6 +68,7 @@ async function startChatCreation(){
           voiceId: voiceId,
           rate: 1.5, // 0.5 ~ 1.5
           emotion: VoiceEmotion.EXCITED,
+          // elevenlabsSettings: {} // https://docs.heygen.com/reference/new-session#voicesetting
         },
         language: language,
         // disableIdleTimeout: false, // Default is false; enable cautiously.
