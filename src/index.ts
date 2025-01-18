@@ -20,6 +20,12 @@ export enum VoiceEmotion {
   SOOTHING = 'soothing',
   BROADCASTER = 'broadcaster',
 }
+export interface ElevenLabsSettings {
+  stability?: number;
+  similarity_boost?: number;
+  style?: number;
+  use_speaker_boost?: boolean;
+}
 export interface StartAvatarRequest {
   quality?: AvatarQuality;
   avatarName: string;
@@ -27,6 +33,7 @@ export interface StartAvatarRequest {
     voiceId?: string
     rate?: number;
     emotion?: VoiceEmotion;
+    elevenlabsSettings?: ElevenLabsSettings;
   };
   knowledgeId?: string;
   language?: string;
@@ -330,6 +337,7 @@ class StreamingAvatar {
         voice_id: requestData.voice?.voiceId,
         rate: requestData.voice?.rate,
         emotion: requestData.voice?.emotion,
+        elevenlabs_settings: requestData?.voice?.elevenlabsSettings,
       },
       language: requestData.language,
       version: "v2",
