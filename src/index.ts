@@ -6,19 +6,20 @@ import jsonDescriptor from "./pipecat.json";
 export interface StreamingAvatarApiConfig {
   token: string;
   basePath?: string;
+  userAudioWebsocketPath?: string;
 }
 
 export enum AvatarQuality {
-  Low = 'low',
-  Medium = 'medium',
-  High = 'high',
+  Low = "low",
+  Medium = "medium",
+  High = "high",
 }
 export enum VoiceEmotion {
-  EXCITED = 'excited',
-  SERIOUS = 'serious',
-  FRIENDLY = 'friendly',
-  SOOTHING = 'soothing',
-  BROADCASTER = 'broadcaster',
+  EXCITED = "excited",
+  SERIOUS = "serious",
+  FRIENDLY = "friendly",
+  SOOTHING = "soothing",
+  BROADCASTER = "broadcaster",
 }
 export interface ElevenLabsSettings {
   stability?: number;
@@ -30,7 +31,7 @@ export interface StartAvatarRequest {
   quality?: AvatarQuality;
   avatarName: string;
   voice?: {
-    voiceId?: string
+    voiceId?: string;
     rate?: number;
     emotion?: VoiceEmotion;
     elevenlabsSettings?: ElevenLabsSettings;
@@ -42,20 +43,21 @@ export interface StartAvatarRequest {
 }
 
 export interface StartAvatarResponse {
-  session_id: string,
-  access_token: string,
-  url: string,
-  is_paid: boolean,
-  session_duration_limit: number
+  session_id: string;
+  access_token: string;
+  url: string;
+  is_paid: boolean;
+  session_duration_limit: number;
+  realtime_endpoint: string;
 }
 
 export enum TaskType {
-  TALK = 'talk',
-  REPEAT = 'repeat',
+  TALK = "talk",
+  REPEAT = "repeat",
 }
 export enum TaskMode {
-  SYNC = 'sync',
-  ASYNC = 'async',
+  SYNC = "sync",
+  ASYNC = "async",
 }
 export interface SpeakRequest {
   text: string;
@@ -70,17 +72,17 @@ export interface CommonRequest {
 
 // event types --------------------------------
 export enum StreamingEvents {
-  AVATAR_START_TALKING = 'avatar_start_talking',
-  AVATAR_STOP_TALKING = 'avatar_stop_talking',
-  AVATAR_TALKING_MESSAGE = 'avatar_talking_message',
-  AVATAR_END_MESSAGE = 'avatar_end_message',
-  USER_TALKING_MESSAGE = 'user_talking_message',
-  USER_END_MESSAGE = 'user_end_message',
-  USER_START = 'user_start',
-  USER_STOP = 'user_stop',
-  USER_SILENCE = 'user_silence',
-  STREAM_READY = 'stream_ready',
-  STREAM_DISCONNECTED = 'stream_disconnected',
+  AVATAR_START_TALKING = "avatar_start_talking",
+  AVATAR_STOP_TALKING = "avatar_stop_talking",
+  AVATAR_TALKING_MESSAGE = "avatar_talking_message",
+  AVATAR_END_MESSAGE = "avatar_end_message",
+  USER_TALKING_MESSAGE = "user_talking_message",
+  USER_END_MESSAGE = "user_end_message",
+  USER_START = "user_start",
+  USER_STOP = "user_stop",
+  USER_SILENCE = "user_silence",
+  STREAM_READY = "stream_ready",
+  STREAM_DISCONNECTED = "stream_disconnected",
 }
 export type EventHandler = (...args: any[]) => void;
 export interface EventData {
@@ -137,7 +139,10 @@ interface UserSilenceEvent extends WebsocketBaseEvent {
   count_down: number;
 }
 
-type StreamingWebSocketEventTypes = UserStartTalkingEvent | UserStopTalkingEvent | UserSilenceEvent;
+type StreamingWebSocketEventTypes =
+  | UserStartTalkingEvent
+  | UserStopTalkingEvent
+  | UserSilenceEvent;
 
 class APIError extends Error {
   public status: number;
@@ -145,7 +150,7 @@ class APIError extends Error {
 
   constructor(message: string, status: number, responseText: string) {
     super(message);
-    this.name = 'APIError';
+    this.name = "APIError";
     this.status = status;
     this.responseText = responseText;
   }
@@ -166,19 +171,26 @@ class StreamingAvatar {
   private audioRawFrame: protobuf.Type | undefined;
   private sessionId: string | null = null;
   private language: string | undefined;
+  private userAudioWebsocketPath: string | undefined;
+  private realtimeEndpoint: string | undefined;
 
   constructor({
     token,
     basePath = "https://api.heygen.com",
+    userAudioWebsocketPath,
   }: StreamingAvatarApiConfig) {
     this.token = token;
     this.basePath = basePath;
+    this.userAudioWebsocketPath = userAudioWebsocketPath;
   }
 
-  public async createStartAvatar(requestData: StartAvatarRequest): Promise<any> {
+  public async createStartAvatar(
+    requestData: StartAvatarRequest
+  ): Promise<any> {
     const sessionInfo = await this.newSession(requestData);
     this.sessionId = sessionInfo.session_id;
     this.language = requestData.language;
+    this.realtimeEndpoint = sessionInfo.realtime_endpoint;
 
     const room = new Room({
       adaptiveStream: true,
@@ -195,7 +207,7 @@ class StreamingAvatar {
       let eventMsg: StreamingEventTypes | null = null;
       try {
         const messageString = new TextDecoder().decode(
-          roomMessage as ArrayBuffer,
+          roomMessage as ArrayBuffer
         );
         eventMsg = JSON.parse(messageString) as StreamingEventTypes;
       } catch (e) {
@@ -214,11 +226,7 @@ class StreamingAvatar {
 
         const hasVideoTrack = mediaStream.getVideoTracks().length > 0;
         const hasAudioTrack = mediaStream.getAudioTracks().length > 0;
-        if (
-          hasVideoTrack &&
-          hasAudioTrack &&
-          !this.mediaStream
-        ) {
+        if (hasVideoTrack && hasAudioTrack && !this.mediaStream) {
           this.mediaStream = mediaStream;
           this.emit(StreamingEvents.STREAM_READY, this.mediaStream);
         }
@@ -246,7 +254,9 @@ class StreamingAvatar {
     return sessionInfo;
   }
 
-  public async startVoiceChat (requestData: { useSilencePrompt?: boolean } = {}) {
+  public async startVoiceChat(
+    requestData: { useSilencePrompt?: boolean } = {}
+  ) {
     requestData.useSilencePrompt = requestData.useSilencePrompt || false;
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       return;
@@ -254,10 +264,12 @@ class StreamingAvatar {
 
     try {
       await this.loadAudioRawFrame();
-      await this.connectWebSocket({ useSilencePrompt: requestData.useSilencePrompt });
+      await this.connectWebSocket({
+        useSilencePrompt: requestData.useSilencePrompt,
+      });
 
       this.audioContext = new window.AudioContext({
-        latencyHint: 'interactive',
+        latencyHint: "interactive",
         sampleRate: 16000,
       });
       const devicesStream = await navigator.mediaDevices.getUserMedia({
@@ -271,8 +283,13 @@ class StreamingAvatar {
       });
       this.mediaDevicesStream = devicesStream;
 
-      this.mediaStreamAudioSource = this.audioContext?.createMediaStreamSource(devicesStream);
-      this.scriptProcessor = this.audioContext?.createScriptProcessor(512, 1, 1);
+      this.mediaStreamAudioSource =
+        this.audioContext?.createMediaStreamSource(devicesStream);
+      this.scriptProcessor = this.audioContext?.createScriptProcessor(
+        512,
+        1,
+        1
+      );
 
       this.mediaStreamAudioSource.connect(this.scriptProcessor);
       this.scriptProcessor.connect(this.audioContext?.destination);
@@ -291,7 +308,9 @@ class StreamingAvatar {
             numChannels: 1,
           },
         });
-        const encodedFrame = new Uint8Array(this.audioRawFrame?.encode(frame).finish());
+        const encodedFrame = new Uint8Array(
+          this.audioRawFrame?.encode(frame).finish()
+        );
         this.webSocket?.send(encodedFrame);
       };
 
@@ -302,7 +321,7 @@ class StreamingAvatar {
       throw e;
     }
   }
-  public closeVoiceChat () {
+  public closeVoiceChat() {
     try {
       if (this.audioContext) {
         this.audioContext = null;
@@ -326,7 +345,7 @@ class StreamingAvatar {
   }
 
   public async newSession(
-    requestData: StartAvatarRequest,
+    requestData: StartAvatarRequest
   ): Promise<StartAvatarResponse> {
     return this.request("/v1/streaming.new", {
       avatar_name: requestData.avatarName,
@@ -342,7 +361,7 @@ class StreamingAvatar {
       language: requestData.language,
       version: "v2",
       video_encoding: "H264",
-      source: 'sdk',
+      source: "sdk",
       disable_idle_timeout: requestData.disableIdleTimeout,
     });
   }
@@ -352,18 +371,26 @@ class StreamingAvatar {
     });
   }
   public async speak(requestData: SpeakRequest): Promise<any> {
-    requestData.taskType = requestData.taskType || requestData.task_type || TaskType.TALK;
+    requestData.taskType =
+      requestData.taskType || requestData.task_type || TaskType.TALK;
     requestData.taskMode = requestData.taskMode || TaskMode.ASYNC;
 
     // try to use websocket first
     // only support talk task
-    if (this.webSocket && this.audioRawFrame && requestData.task_type === TaskType.TALK && requestData.taskMode !== TaskMode.SYNC) {
+    if (
+      this.webSocket &&
+      this.audioRawFrame &&
+      requestData.task_type === TaskType.TALK &&
+      requestData.taskMode !== TaskMode.SYNC
+    ) {
       const frame = this.audioRawFrame?.create({
         text: {
           text: requestData.text,
         },
       });
-      const encodedFrame = new Uint8Array(this.audioRawFrame?.encode(frame).finish());
+      const encodedFrame = new Uint8Array(
+        this.audioRawFrame?.encode(frame).finish()
+      );
       this.webSocket?.send(encodedFrame);
       return;
     }
@@ -409,7 +436,11 @@ class StreamingAvatar {
     return this;
   }
 
-  private async request(path: string, params: CommonRequest, config?: any): Promise<any> {
+  private async request(
+    path: string,
+    params: CommonRequest,
+    config?: any
+  ): Promise<any> {
     try {
       const response = await fetch(this.getRequestUrl(path), {
         method: "POST",
@@ -430,7 +461,7 @@ class StreamingAvatar {
       }
 
       const jsonData = await response.json();
-      return jsonData.data
+      return jsonData.data;
     } catch (error) {
       throw error;
     }
@@ -443,13 +474,15 @@ class StreamingAvatar {
   private getRequestUrl(endpoint: string): string {
     return `${this.basePath}${endpoint}`;
   }
-  private async connectWebSocket (requestData: { useSilencePrompt: boolean }) {
-    let websocketUrl = `wss://${new URL(this.basePath).hostname}/v1/ws/streaming.chat?session_id=${this.sessionId}&session_token=${this.token}&silence_response=${requestData.useSilencePrompt}`;
+  private async connectWebSocket(requestData: { useSilencePrompt: boolean }) {
+    let websocketUrl = this.userAudioWebsocketPath
+      ? `${this.userAudioWebsocketPath}?session_id=${this.sessionId}&session_token=${this.token}&realtime_endpoint=${encodeURIComponent(this.realtimeEndpoint)}`
+      : `${this.basePath}/v1/ws/streaming.chat?session_id=${this.sessionId}&session_token=${this.token}&silence_response=${requestData.useSilencePrompt}`;
     if (this.language) {
       websocketUrl += `&stt_language=${this.language}`;
     }
     this.webSocket = new WebSocket(websocketUrl);
-    this.webSocket.addEventListener('message', (event) => {
+    this.webSocket.addEventListener("message", (event) => {
       let eventData: StreamingWebSocketEventTypes | null = null;
       try {
         eventData = JSON.parse(event.data);
@@ -459,23 +492,23 @@ class StreamingAvatar {
       }
       this.emit(eventData.event_type, eventData);
     });
-    this.webSocket.addEventListener('close', (event) => {
+    this.webSocket.addEventListener("close", (event) => {
       this.webSocket = null;
     });
     return new Promise((resolve, reject) => {
-      this.webSocket?.addEventListener('error', (event) => {
+      this.webSocket?.addEventListener("error", (event) => {
         this.webSocket = null;
         reject(event);
       });
-      this.webSocket?.addEventListener('open', () => {
+      this.webSocket?.addEventListener("open", () => {
         resolve(true);
       });
     });
   }
-  private async loadAudioRawFrame () {
+  private async loadAudioRawFrame() {
     if (!this.audioRawFrame) {
       const root = protobuf.Root.fromJSON(jsonDescriptor);
-      this.audioRawFrame = root?.lookupType('pipecat.Frame');
+      this.audioRawFrame = root?.lookupType("pipecat.Frame");
     }
   }
 }
