@@ -1,7 +1,7 @@
-import { Room, RoomEvent, VideoPresets } from "livekit-client";
-import protobuf from "protobufjs";
-import { convertFloat32ToS16PCM, sleep } from "./utils";
-import jsonDescriptor from "./pipecat.json";
+import { Room, RoomEvent, VideoPresets } from 'livekit-client';
+import protobuf from 'protobufjs';
+import { convertFloat32ToS16PCM, sleep } from './utils';
+import jsonDescriptor from './pipecat.json';
 
 export interface StreamingAvatarApiConfig {
   token: string;
@@ -30,7 +30,7 @@ export interface StartAvatarRequest {
   quality?: AvatarQuality;
   avatarName: string;
   voice?: {
-    voiceId?: string
+    voiceId?: string;
     rate?: number;
     emotion?: VoiceEmotion;
     elevenlabsSettings?: ElevenLabsSettings;
@@ -42,11 +42,11 @@ export interface StartAvatarRequest {
 }
 
 export interface StartAvatarResponse {
-  session_id: string,
-  access_token: string,
-  url: string,
-  is_paid: boolean,
-  session_duration_limit: number
+  session_id: string;
+  access_token: string;
+  url: string;
+  is_paid: boolean;
+  session_duration_limit: number;
 }
 
 export enum TaskType {
@@ -137,7 +137,10 @@ interface UserSilenceEvent extends WebsocketBaseEvent {
   count_down: number;
 }
 
-type StreamingWebSocketEventTypes = UserStartTalkingEvent | UserStopTalkingEvent | UserSilenceEvent;
+type StreamingWebSocketEventTypes =
+  | UserStartTalkingEvent
+  | UserStopTalkingEvent
+  | UserSilenceEvent;
 
 class APIError extends Error {
   public status: number;
@@ -166,13 +169,27 @@ class StreamingAvatar {
   private audioRawFrame: protobuf.Type | undefined;
   private sessionId: string | null = null;
   private language: string | undefined;
+  private isMuted: boolean = true;
 
-  constructor({
-    token,
-    basePath = "https://api.heygen.com",
-  }: StreamingAvatarApiConfig) {
+  constructor({ token, basePath = 'https://api.heygen.com' }: StreamingAvatarApiConfig) {
     this.token = token;
     this.basePath = basePath;
+  }
+
+  public get isInputAudioMuted(): boolean {
+    return this.isMuted;
+  }
+
+  public muteInputAudio() {
+    if (this.isVoiceChatActive) {
+      this.isMuted = true;
+    }
+  }
+
+  public unmuteInputAudio() {
+    if (this.isVoiceChatActive) {
+      this.isMuted = false;
+    }
   }
 
   public async createStartAvatar(requestData: StartAvatarRequest): Promise<any> {
@@ -194,9 +211,7 @@ class StreamingAvatar {
     room.on(RoomEvent.DataReceived, (roomMessage) => {
       let eventMsg: StreamingEventTypes | null = null;
       try {
-        const messageString = new TextDecoder().decode(
-          roomMessage as ArrayBuffer,
-        );
+        const messageString = new TextDecoder().decode(roomMessage as ArrayBuffer);
         eventMsg = JSON.parse(messageString) as StreamingEventTypes;
       } catch (e) {
         console.error(e);
@@ -209,16 +224,12 @@ class StreamingAvatar {
 
     const mediaStream = new MediaStream();
     room.on(RoomEvent.TrackSubscribed, (track) => {
-      if (track.kind === "video" || track.kind === "audio") {
+      if (track.kind === 'video' || track.kind === 'audio') {
         mediaStream.addTrack(track.mediaStreamTrack);
 
         const hasVideoTrack = mediaStream.getVideoTracks().length > 0;
         const hasAudioTrack = mediaStream.getAudioTracks().length > 0;
-        if (
-          hasVideoTrack &&
-          hasAudioTrack &&
-          !this.mediaStream
-        ) {
+        if (hasVideoTrack && hasAudioTrack && !this.mediaStream) {
           this.mediaStream = mediaStream;
           this.emit(StreamingEvents.STREAM_READY, this.mediaStream);
         }
@@ -246,7 +257,9 @@ class StreamingAvatar {
     return sessionInfo;
   }
 
-  public async startVoiceChat (requestData: { useSilencePrompt?: boolean } = {}) {
+  public async startVoiceChat(
+    requestData: { useSilencePrompt?: boolean; isInputAudioMuted?: boolean } = {}
+  ) {
     requestData.useSilencePrompt = requestData.useSilencePrompt || false;
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       return;
@@ -271,17 +284,27 @@ class StreamingAvatar {
       });
       this.mediaDevicesStream = devicesStream;
 
-      this.mediaStreamAudioSource = this.audioContext?.createMediaStreamSource(devicesStream);
+      this.mediaStreamAudioSource =
+        this.audioContext?.createMediaStreamSource(devicesStream);
       this.scriptProcessor = this.audioContext?.createScriptProcessor(512, 1, 1);
 
       this.mediaStreamAudioSource.connect(this.scriptProcessor);
       this.scriptProcessor.connect(this.audioContext?.destination);
 
+      if (!requestData.isInputAudioMuted) {
+        this.isMuted = false;
+      }
+
       this.scriptProcessor.onaudioprocess = (event) => {
         if (!this.webSocket) {
           return;
         }
-        const audioData = event.inputBuffer.getChannelData(0);
+        let audioData: Float32Array;
+        if (this.isInputAudioMuted) {
+          audioData = new Float32Array(512);
+        } else {
+          audioData = event.inputBuffer.getChannelData(0);
+        }
         const pcmS16Array = convertFloat32ToS16PCM(audioData);
         const pcmByteArray = new Uint8Array(pcmS16Array.buffer);
         const frame = this.audioRawFrame?.create({
@@ -302,8 +325,9 @@ class StreamingAvatar {
       throw e;
     }
   }
-  public closeVoiceChat () {
+  public closeVoiceChat() {
     try {
+      this.isMuted = true;
       if (this.audioContext) {
         this.audioContext = null;
       }
@@ -325,10 +349,8 @@ class StreamingAvatar {
     } catch (e) {}
   }
 
-  public async newSession(
-    requestData: StartAvatarRequest,
-  ): Promise<StartAvatarResponse> {
-    return this.request("/v1/streaming.new", {
+  public async newSession(requestData: StartAvatarRequest): Promise<StartAvatarResponse> {
+    return this.request('/v1/streaming.new', {
       avatar_name: requestData.avatarName,
       quality: requestData.quality,
       knowledge_base_id: requestData.knowledgeId,
@@ -340,14 +362,14 @@ class StreamingAvatar {
         elevenlabs_settings: requestData?.voice?.elevenlabsSettings,
       },
       language: requestData.language,
-      version: "v2",
-      video_encoding: "H264",
+      version: 'v2',
+      video_encoding: 'H264',
       source: 'sdk',
       disable_idle_timeout: requestData.disableIdleTimeout,
     });
   }
   public async startSession(): Promise<any> {
-    return this.request("/v1/streaming.start", {
+    return this.request('/v1/streaming.start', {
       session_id: this.sessionId,
     });
   }
@@ -357,7 +379,12 @@ class StreamingAvatar {
 
     // try to use websocket first
     // only support talk task
-    if (this.webSocket && this.audioRawFrame && requestData.task_type === TaskType.TALK && requestData.taskMode !== TaskMode.SYNC) {
+    if (
+      this.webSocket &&
+      this.audioRawFrame &&
+      requestData.task_type === TaskType.TALK &&
+      requestData.taskMode !== TaskMode.SYNC
+    ) {
       const frame = this.audioRawFrame?.create({
         text: {
           text: requestData.text,
@@ -367,7 +394,7 @@ class StreamingAvatar {
       this.webSocket?.send(encodedFrame);
       return;
     }
-    return this.request("/v1/streaming.task", {
+    return this.request('/v1/streaming.task', {
       text: requestData.text,
       session_id: this.sessionId,
       task_mode: requestData.taskMode,
@@ -376,17 +403,17 @@ class StreamingAvatar {
   }
 
   public async startListening(): Promise<any> {
-    return this.request("/v1/streaming.start_listening", {
+    return this.request('/v1/streaming.start_listening', {
       session_id: this.sessionId,
     });
   }
   public async stopListening(): Promise<any> {
-    return this.request("/v1/streaming.stop_listening", {
+    return this.request('/v1/streaming.stop_listening', {
       session_id: this.sessionId,
     });
   }
   public async interrupt(): Promise<any> {
-    return this.request("/v1/streaming.interrupt", {
+    return this.request('/v1/streaming.interrupt', {
       session_id: this.sessionId,
     });
   }
@@ -394,7 +421,7 @@ class StreamingAvatar {
   public async stopAvatar(): Promise<any> {
     // clear some resources
     this.closeVoiceChat();
-    return this.request("/v1/streaming.stop", {
+    return this.request('/v1/streaming.stop', {
       session_id: this.sessionId,
     });
   }
@@ -412,10 +439,10 @@ class StreamingAvatar {
   private async request(path: string, params: CommonRequest, config?: any): Promise<any> {
     try {
       const response = await fetch(this.getRequestUrl(path), {
-        method: "POST",
+        method: 'POST',
         headers: {
           Authorization: `Bearer ${this.token}`,
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(params),
       });
@@ -430,7 +457,7 @@ class StreamingAvatar {
       }
 
       const jsonData = await response.json();
-      return jsonData.data
+      return jsonData.data;
     } catch (error) {
       throw error;
     }
@@ -443,7 +470,7 @@ class StreamingAvatar {
   private getRequestUrl(endpoint: string): string {
     return `${this.basePath}${endpoint}`;
   }
-  private async connectWebSocket (requestData: { useSilencePrompt: boolean }) {
+  private async connectWebSocket(requestData: { useSilencePrompt: boolean }) {
     let websocketUrl = `wss://${new URL(this.basePath).hostname}/v1/ws/streaming.chat?session_id=${this.sessionId}&session_token=${this.token}&silence_response=${requestData.useSilencePrompt}`;
     if (this.language) {
       websocketUrl += `&stt_language=${this.language}`;
@@ -472,7 +499,12 @@ class StreamingAvatar {
       });
     });
   }
-  private async loadAudioRawFrame () {
+
+  private get isVoiceChatActive(): boolean {
+    return !!this.audioContext;
+  }
+
+  private async loadAudioRawFrame() {
     if (!this.audioRawFrame) {
       const root = protobuf.Root.fromJSON(jsonDescriptor);
       this.audioRawFrame = root?.lookupType('pipecat.Frame');

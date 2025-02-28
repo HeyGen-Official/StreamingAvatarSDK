@@ -77,6 +77,7 @@ async function startChatCreation(){
     // switch to voice chat. in this mode, we will record your voice and keep chatting with avatar in real time.
     await streamingAvatar.startVoiceChat({
       useSilencePrompt: true, // the default is false. true means you will receive silence prompts.
+      isInputAudioMuted: true, // the default is false. you can also handle `mute` by using streamingAvatar.muteInputAudio(), streamingAvatar.unmuteInputAudio().
     });
 }
 
