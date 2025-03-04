@@ -1,5 +1,8 @@
 ## Interactive-Avatar
 
+## Changes 2.1.0
+1. Added support for livekit user input transport.
+
 ## Changes 2.0
 1. Added support for voice chat.
 
@@ -72,12 +75,13 @@ async function startChatCreation(){
         },
         language: language,
         // disableIdleTimeout: false, // Default is false; enable cautiously.
+        useSilencePrompt: true, // Default is false. true means you will receive silence prompts.
+        userInputTransport: UserInputTransport.WEBSOCKET, // Default is websocket. Defines whether to use websocket or livekit for user's text messages and audio transport.
     });
     
     // switch to voice chat. in this mode, we will record your voice and keep chatting with avatar in real time.
     await streamingAvatar.startVoiceChat({
-      useSilencePrompt: true, // the default is false. true means you will receive silence prompts.
-      isInputAudioMuted: true, // the default is false. you can also handle `mute` by using streamingAvatar.muteInputAudio(), streamingAvatar.unmuteInputAudio().
+      isInputAudioMuted: true, // Default is false. You can also handle `mute` by using streamingAvatar.muteInputAudio(), streamingAvatar.unmuteInputAudio().
     });
 }
 

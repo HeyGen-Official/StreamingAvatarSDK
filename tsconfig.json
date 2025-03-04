@@ -11,7 +11,8 @@
       "es2018"
     ],
     "resolveJsonModule": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "strict": true
   },
   "include": [
     "src/**/*.ts"
