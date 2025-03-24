@@ -20,11 +20,23 @@ export enum VoiceEmotion {
   SOOTHING = 'soothing',
   BROADCASTER = 'broadcaster',
 }
+export enum ElevenLabsModel {
+  eleven_flash_v2_5 = "eleven_flash_v2_5",
+  eleven_multilingual_v2 = "eleven_multilingual_v2",
+}
 export interface ElevenLabsSettings {
   stability?: number;
   similarity_boost?: number;
   style?: number;
   use_speaker_boost?: boolean;
+}
+export enum STTModel {
+  DEEPGRAM = "deepgram",
+  GLADIA = "gladia",
+}
+export interface STTSettings {
+  model?: STTModel;
+  confidence?: number;
 }
 export interface StartAvatarRequest {
   quality?: AvatarQuality;
@@ -34,11 +46,13 @@ export interface StartAvatarRequest {
     rate?: number;
     emotion?: VoiceEmotion;
     elevenlabsSettings?: ElevenLabsSettings;
+    model?: ElevenLabsModel;
   };
   knowledgeId?: string;
   language?: string;
   knowledgeBase?: string;
   disableIdleTimeout?: boolean;
+  sttSettings?: STTSettings;
 }
 
 export interface StartAvatarResponse {

@@ -1,5 +1,12 @@
 ## Interactive-Avatar
 
+## Changes 2.0.11
+1. Added support for elevenlabs `eleven_flash_v2_5` and `eleven_multilingual_v2` models.
+2. Added gladia STT provider option.
+
+## Changes 2.0.10
+1. Added support for muting users audio during voice chat.
+
 ## Changes 2.0
 1. Added support for voice chat.
 
@@ -69,6 +76,11 @@ async function startChatCreation(){
           rate: 1.5, // 0.5 ~ 1.5
           emotion: VoiceEmotion.EXCITED,
           // elevenlabsSettings: {} // https://docs.heygen.com/reference/new-session#voicesetting
+          // model: ElevenLabsModel.MULTILINGUAL, elevenlabs audio model
+        },
+        sttSettings: {
+          model: STTModel.DEEPGRAM, // STT provider to use. The default is DEEPGRAM.
+          confidence: 0.55, // The default is 0.55.
         },
         language: language,
         // disableIdleTimeout: false, // Default is false; enable cautiously.
