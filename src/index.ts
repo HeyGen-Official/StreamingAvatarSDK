@@ -374,12 +374,14 @@ class StreamingAvatar {
         rate: requestData.voice?.rate,
         emotion: requestData.voice?.emotion,
         elevenlabs_settings: requestData?.voice?.elevenlabsSettings,
+        model: requestData.voice?.model,
       },
       language: requestData.language,
       version: 'v2',
       video_encoding: 'H264',
       source: 'sdk',
       disable_idle_timeout: requestData.disableIdleTimeout,
+      stt_settings: requestData.sttSettings,
     });
   }
   public async startSession(): Promise<any> {
