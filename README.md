@@ -79,7 +79,7 @@ async function startChatCreation(){
           // model: ElevenLabsModel.MULTILINGUAL, elevenlabs audio model
         },
         sttSettings: {
-          model: STTModel.DEEPGRAM, // STT provider to use. The default is DEEPGRAM.
+          provider: STTProvider.DEEPGRAM, // STT provider to use. The default is DEEPGRAM.
           confidence: 0.55, // The default is 0.55.
         },
         language: language,

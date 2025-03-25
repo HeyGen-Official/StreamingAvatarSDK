@@ -30,12 +30,12 @@ export interface ElevenLabsSettings {
   style?: number;
   use_speaker_boost?: boolean;
 }
-export enum STTModel {
+export enum STTProvider {
   DEEPGRAM = "deepgram",
   GLADIA = "gladia",
 }
 export interface STTSettings {
-  model?: STTModel;
+  provider?: STTProvider;
   confidence?: number;
 }
 export interface StartAvatarRequest {
