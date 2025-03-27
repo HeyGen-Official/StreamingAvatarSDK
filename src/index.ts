@@ -20,11 +20,23 @@ export enum VoiceEmotion {
   SOOTHING = 'soothing',
   BROADCASTER = 'broadcaster',
 }
+export enum ElevenLabsModel {
+  eleven_flash_v2_5 = "eleven_flash_v2_5",
+  eleven_multilingual_v2 = "eleven_multilingual_v2",
+}
 export interface ElevenLabsSettings {
   stability?: number;
   similarity_boost?: number;
   style?: number;
   use_speaker_boost?: boolean;
+}
+export enum STTProvider {
+  DEEPGRAM = "deepgram",
+  GLADIA = "gladia",
+}
+export interface STTSettings {
+  provider?: STTProvider;
+  confidence?: number;
 }
 export interface StartAvatarRequest {
   quality?: AvatarQuality;
@@ -34,11 +46,13 @@ export interface StartAvatarRequest {
     rate?: number;
     emotion?: VoiceEmotion;
     elevenlabsSettings?: ElevenLabsSettings;
+    model?: ElevenLabsModel;
   };
   knowledgeId?: string;
   language?: string;
   knowledgeBase?: string;
   disableIdleTimeout?: boolean;
+  sttSettings?: STTSettings;
 }
 
 export interface StartAvatarResponse {
@@ -360,12 +374,14 @@ class StreamingAvatar {
         rate: requestData.voice?.rate,
         emotion: requestData.voice?.emotion,
         elevenlabs_settings: requestData?.voice?.elevenlabsSettings,
+        model: requestData.voice?.model,
       },
       language: requestData.language,
       version: 'v2',
       video_encoding: 'H264',
       source: 'sdk',
       disable_idle_timeout: requestData.disableIdleTimeout,
+      stt_settings: requestData.sttSettings,
     });
   }
   public async startSession(): Promise<any> {
