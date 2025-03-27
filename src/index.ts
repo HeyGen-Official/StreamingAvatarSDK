@@ -2,10 +2,13 @@ import { Room, RoomEvent, VideoPresets } from 'livekit-client';
 import protobuf from 'protobufjs';
 import { convertFloat32ToS16PCM, sleep } from './utils';
 import jsonDescriptor from './pipecat.json';
+import { LiveKitConnectionQualityIndicator, ConnectionQuality } from './QualityIndicator';
+import { Telemetry } from './Telemetry';
 
 export interface StreamingAvatarApiConfig {
   token: string;
   basePath?: string;
+  telemetry?: boolean;
 }
 
 export enum AvatarQuality {
@@ -21,8 +24,8 @@ export enum VoiceEmotion {
   BROADCASTER = 'broadcaster',
 }
 export enum ElevenLabsModel {
-  eleven_flash_v2_5 = "eleven_flash_v2_5",
-  eleven_multilingual_v2 = "eleven_multilingual_v2",
+  eleven_flash_v2_5 = 'eleven_flash_v2_5',
+  eleven_multilingual_v2 = 'eleven_multilingual_v2',
 }
 export interface ElevenLabsSettings {
   stability?: number;
@@ -31,8 +34,8 @@ export interface ElevenLabsSettings {
   use_speaker_boost?: boolean;
 }
 export enum STTProvider {
-  DEEPGRAM = "deepgram",
-  GLADIA = "gladia",
+  DEEPGRAM = 'deepgram',
+  GLADIA = 'gladia',
 }
 export interface STTSettings {
   provider?: STTProvider;
@@ -95,6 +98,7 @@ export enum StreamingEvents {
   USER_SILENCE = 'user_silence',
   STREAM_READY = 'stream_ready',
   STREAM_DISCONNECTED = 'stream_disconnected',
+  CONNECTION_QUALITY_CHANGED = 'connection_quality_changed',
 }
 export type EventHandler = (...args: any[]) => void;
 export interface EventData {
@@ -184,10 +188,29 @@ class StreamingAvatar {
   private sessionId: string | null = null;
   private language: string | undefined;
   private isMuted: boolean = true;
+  private connectionQualityIndicator: LiveKitConnectionQualityIndicator;
+  private telemetry: Telemetry | null = null;
 
-  constructor({ token, basePath = 'https://api.heygen.com' }: StreamingAvatarApiConfig) {
+  constructor({
+    token,
+    basePath = 'https://api.heygen.com',
+    telemetry = false,
+  }: StreamingAvatarApiConfig) {
     this.token = token;
     this.basePath = basePath;
+    this.connectionQualityIndicator = new LiveKitConnectionQualityIndicator((quality) =>
+      this.emit(StreamingEvents.CONNECTION_QUALITY_CHANGED, quality)
+    );
+    if (telemetry) {
+      this.telemetry = new Telemetry({
+        basePath,
+        avatar: this,
+      });
+    }
+  }
+
+  public get connectionQuality(): ConnectionQuality {
+    return this.connectionQualityIndicator.connectionQuality;
   }
 
   public get isInputAudioMuted(): boolean {
@@ -207,6 +230,7 @@ class StreamingAvatar {
   }
 
   public async createStartAvatar(requestData: StartAvatarRequest): Promise<any> {
+    this.telemetry?.start();
     const sessionInfo = await this.newSession(requestData);
     this.sessionId = sessionInfo.session_id;
     this.language = requestData.language;
@@ -267,6 +291,7 @@ class StreamingAvatar {
     await this.startSession();
 
     await room.connect(sessionInfo.url, sessionInfo.access_token);
+    this.connectionQualityIndicator.start(room);
 
     return sessionInfo;
   }
@@ -437,6 +462,8 @@ class StreamingAvatar {
   public async stopAvatar(): Promise<any> {
     // clear some resources
     this.closeVoiceChat();
+    this.connectionQualityIndicator.stop();
+    this.telemetry?.stop();
     return this.request('/v1/streaming.stop', {
       session_id: this.sessionId,
     });
