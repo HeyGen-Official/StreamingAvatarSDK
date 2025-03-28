@@ -11,6 +11,7 @@ export class WebRTCConnectionQualityIndicator extends AbstractConnectionQualityI
       getStatsInterval: 3000,
       onNetworkScoresUpdated: (scores) => {
         this.mosScores = scores;
+        this.handleStatsChanged();
       },
     });
     this.issueDetector.handleNewPeerConnection(peerConnection);

@@ -6,29 +6,22 @@ import {
   ConnectionState as LiveKitConnectionState,
 } from 'livekit-client';
 import { AbstractConnectionQualityIndicator, ConnectionQuality } from './base';
-import { WebRTCConnectionQualityIndicator } from './WebRTCQualityIndicator';
 
 export class LiveKitConnectionQualityIndicator extends AbstractConnectionQualityIndicator<Room> {
   private room: Room | null = null;
   private liveKitConnectionQuality: LiveKitConnectionQuality =
     LiveKitConnectionQuality.Unknown;
   private liveKitConnectionState: LiveKitConnectionState | null = null;
-  protected childTrackerClasses = [
-    {
-      TrackerClass: WebRTCConnectionQualityIndicator,
-      getParams: (room: Room) => (room.engine.pcManager?.subscriber as any)._pc,
-    },
-  ];
 
-  private handleConnectionQualityChanged(quality: LiveKitConnectionQuality) {
+  private handleConnectionQualityChanged = (quality: LiveKitConnectionQuality) => {
     this.liveKitConnectionQuality = quality;
     this.handleStatsChanged();
-  }
+  };
 
-  private handleConnectionStateChanged(state: LiveKitConnectionState) {
+  private handleConnectionStateChanged = (state: LiveKitConnectionState) => {
     this.liveKitConnectionState = state;
     this.handleStatsChanged();
-  }
+  };
 
   protected _start(room: Room) {
     this.room = room;
@@ -55,10 +48,6 @@ export class LiveKitConnectionQualityIndicator extends AbstractConnectionQuality
       )
     ) {
       return ConnectionQuality.BAD;
-    }
-
-    if (!this.liveKitConnectionState) {
-      return ConnectionQuality.UNKNOWN;
     }
 
     if (

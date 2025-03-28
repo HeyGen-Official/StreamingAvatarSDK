@@ -2,8 +2,16 @@ import { Room, RoomEvent, VideoPresets } from 'livekit-client';
 import protobuf from 'protobufjs';
 import { convertFloat32ToS16PCM, sleep } from './utils';
 import jsonDescriptor from './pipecat.json';
-import { LiveKitConnectionQualityIndicator, ConnectionQuality } from './QualityIndicator';
+import {
+  ConnectionQuality,
+  LiveKitConnectionQualityIndicator,
+  WebRTCConnectionQualityIndicator,
+  QualityIndicatorMixer,
+  AbstractConnectionQualityIndicator,
+} from './QualityIndicator';
 import { Telemetry } from './Telemetry';
+
+export { ConnectionQuality } from './QualityIndicator';
 
 export interface StreamingAvatarApiConfig {
   token: string;
@@ -172,6 +180,17 @@ class APIError extends Error {
   }
 }
 
+const ConnectionQualityIndicatorClass = QualityIndicatorMixer(
+  {
+    TrackerClass: LiveKitConnectionQualityIndicator,
+    getParams: (room: Room) => room,
+  },
+  {
+    TrackerClass: WebRTCConnectionQualityIndicator,
+    getParams: (room: Room) => (room.engine.pcManager?.subscriber as any)._pc,
+  }
+);
+
 class StreamingAvatar {
   public room: Room | null = null;
   public mediaStream: MediaStream | null = null;
@@ -180,7 +199,7 @@ class StreamingAvatar {
   private readonly basePath: string;
   private eventTarget = new EventTarget();
   private audioContext: AudioContext | null = null;
-  private webSocket: globalThis.WebSocket = null;
+  private webSocket: globalThis.WebSocket | null = null;
   private scriptProcessor: ScriptProcessorNode | null = null;
   private mediaStreamAudioSource: MediaStreamAudioSourceNode | null = null;
   private mediaDevicesStream: MediaStream | null = null;
@@ -188,7 +207,7 @@ class StreamingAvatar {
   private sessionId: string | null = null;
   private language: string | undefined;
   private isMuted: boolean = true;
-  private connectionQualityIndicator: LiveKitConnectionQualityIndicator;
+  private connectionQualityIndicator: AbstractConnectionQualityIndicator<Room>;
   private telemetry: Telemetry | null = null;
 
   constructor({
@@ -198,8 +217,8 @@ class StreamingAvatar {
   }: StreamingAvatarApiConfig) {
     this.token = token;
     this.basePath = basePath;
-    this.connectionQualityIndicator = new LiveKitConnectionQualityIndicator((quality) =>
-      this.emit(StreamingEvents.CONNECTION_QUALITY_CHANGED, quality)
+    this.connectionQualityIndicator = new ConnectionQualityIndicatorClass(() =>
+      this.emit(StreamingEvents.CONNECTION_QUALITY_CHANGED, this.connectionQuality)
     );
     if (telemetry) {
       this.telemetry = new Telemetry({
@@ -249,7 +268,7 @@ class StreamingAvatar {
     room.on(RoomEvent.DataReceived, (roomMessage) => {
       let eventMsg: StreamingEventTypes | null = null;
       try {
-        const messageString = new TextDecoder().decode(roomMessage as ArrayBuffer);
+        const messageString = new TextDecoder().decode(roomMessage);
         eventMsg = JSON.parse(messageString) as StreamingEventTypes;
       } catch (e) {
         console.error(e);
@@ -353,8 +372,10 @@ class StreamingAvatar {
             numChannels: 1,
           },
         });
-        const encodedFrame = new Uint8Array(this.audioRawFrame?.encode(frame).finish());
-        this.webSocket?.send(encodedFrame);
+        if (frame && this.audioRawFrame && this.webSocket) {
+          const encodedFrame = new Uint8Array(this.audioRawFrame.encode(frame).finish());
+          this.webSocket?.send(encodedFrame);
+        }
       };
 
       // though room has been connected, but the stream may not be ready.
@@ -527,7 +548,9 @@ class StreamingAvatar {
         console.error(e);
         return;
       }
-      this.emit(eventData.event_type, eventData);
+      if (eventData) {
+        this.emit(eventData.event_type, eventData);
+      }
     });
     this.webSocket.addEventListener('close', (event) => {
       this.webSocket = null;

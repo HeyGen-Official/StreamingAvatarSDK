@@ -19,7 +19,7 @@ export class Telemetry {
   private async send(data: any): Promise<any> {
     try {
       // TODO: use correct endpoint
-      fetch(`${this.basePath}/telemetry`, {
+      fetch(`${this.basePath}/movio.batch_track`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,3 +1,3 @@
 export * from './LiveKitQualityIndicator';
 export * from './WebRTCQualityIndicator';
-export type { ConnectionQuality } from './base';
+export { ConnectionQuality, AbstractConnectionQualityIndicator, QualityIndicatorMixer } from './base';
