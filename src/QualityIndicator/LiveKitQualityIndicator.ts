@@ -34,10 +34,11 @@ export class LiveKitConnectionQualityIndicator extends AbstractConnectionQuality
 
   protected _stop() {
     if (this.room) {
-      this.room.off(
+      this.room.localParticipant.off(
         RoomEvent.ConnectionQualityChanged,
         this.handleConnectionQualityChanged
       );
+      this.room.off(RoomEvent.ConnectionStateChanged, this.handleConnectionStateChanged);
     }
   }
 

@@ -217,8 +217,8 @@ class StreamingAvatar {
   }: StreamingAvatarApiConfig) {
     this.token = token;
     this.basePath = basePath;
-    this.connectionQualityIndicator = new ConnectionQualityIndicatorClass(() =>
-      this.emit(StreamingEvents.CONNECTION_QUALITY_CHANGED, this.connectionQuality)
+    this.connectionQualityIndicator = new ConnectionQualityIndicatorClass((quality) =>
+      this.emit(StreamingEvents.CONNECTION_QUALITY_CHANGED, quality)
     );
     if (telemetry) {
       this.telemetry = new Telemetry({

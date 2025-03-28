@@ -36,13 +36,16 @@ export abstract class AbstractConnectionQualityIndicator<T> {
   protected abstract _stop(): void;
 
   public start(params: T) {
-    this.stop();
+    this.stop(true);
     this._start(params);
   }
 
-  public stop() {
+  public stop(muted: boolean = false) {
     this._stop();
     this._connectionQuality = ConnectionQuality.UNKNOWN;
+    if (!muted) {
+      this.onConnectionQualityChanged(ConnectionQuality.UNKNOWN);
+    }
   }
 }
 
@@ -85,7 +88,7 @@ export function QualityIndicatorMixer<T>(...configs: ChildTrackerConfig<T, any>[
     }
 
     protected _stop(): void {
-      this.childTrackers.forEach(({ tracker }) => tracker.stop());
+      this.childTrackers.forEach(({ tracker }) => tracker.stop(true));
     }
   }
 
