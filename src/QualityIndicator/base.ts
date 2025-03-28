@@ -25,7 +25,6 @@ export abstract class AbstractConnectionQualityIndicator<T> {
 
   protected handleStatsChanged() {
     const newConnectionQuality = this.calculateConnectionQuality();
-    console.log('NEW CONNECTION QUALITY', this.constructor.name, newConnectionQuality);
     if (newConnectionQuality !== this._connectionQuality) {
       this._connectionQuality = newConnectionQuality;
       this.onConnectionQualityChanged(newConnectionQuality);
