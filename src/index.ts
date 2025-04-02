@@ -9,14 +9,12 @@ import {
   QualityIndicatorMixer,
   AbstractConnectionQualityIndicator,
 } from './QualityIndicator';
-import { Telemetry } from './Telemetry';
 
 export { ConnectionQuality } from './QualityIndicator';
 
 export interface StreamingAvatarApiConfig {
   token: string;
   basePath?: string;
-  telemetry?: boolean;
 }
 
 export enum AvatarQuality {
@@ -208,24 +206,16 @@ class StreamingAvatar {
   private language: string | undefined;
   private isMuted: boolean = true;
   private connectionQualityIndicator: AbstractConnectionQualityIndicator<Room>;
-  private telemetry: Telemetry | null = null;
 
   constructor({
     token,
     basePath = 'https://api.heygen.com',
-    telemetry = false,
   }: StreamingAvatarApiConfig) {
     this.token = token;
     this.basePath = basePath;
     this.connectionQualityIndicator = new ConnectionQualityIndicatorClass((quality) =>
       this.emit(StreamingEvents.CONNECTION_QUALITY_CHANGED, quality)
     );
-    if (telemetry) {
-      this.telemetry = new Telemetry({
-        basePath,
-        avatar: this,
-      });
-    }
   }
 
   public get connectionQuality(): ConnectionQuality {
@@ -249,7 +239,6 @@ class StreamingAvatar {
   }
 
   public async createStartAvatar(requestData: StartAvatarRequest): Promise<any> {
-    this.telemetry?.start();
     const sessionInfo = await this.newSession(requestData);
     this.sessionId = sessionInfo.session_id;
     this.language = requestData.language;
@@ -484,7 +473,6 @@ class StreamingAvatar {
     // clear some resources
     this.closeVoiceChat();
     this.connectionQualityIndicator.stop();
-    this.telemetry?.stop();
     return this.request('/v1/streaming.stop', {
       session_id: this.sessionId,
     });
