@@ -1,5 +1,8 @@
 ## Interactive-Avatar
 
+## Changes 2.0.12
+1. Added support for quality indicator.
+
 ## Changes 2.0.11
 1. Added support for elevenlabs `eleven_flash_v2_5` and `eleven_multilingual_v2` models.
 2. Added gladia STT provider option.

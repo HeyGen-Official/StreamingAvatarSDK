@@ -2,6 +2,15 @@ import { Room, RoomEvent, VideoPresets } from 'livekit-client';
 import protobuf from 'protobufjs';
 import { convertFloat32ToS16PCM, sleep } from './utils';
 import jsonDescriptor from './pipecat.json';
+import {
+  ConnectionQuality,
+  LiveKitConnectionQualityIndicator,
+  WebRTCConnectionQualityIndicator,
+  QualityIndicatorMixer,
+  AbstractConnectionQualityIndicator,
+} from './QualityIndicator';
+
+export { ConnectionQuality } from './QualityIndicator';
 
 export interface StreamingAvatarApiConfig {
   token: string;
@@ -21,8 +30,8 @@ export enum VoiceEmotion {
   BROADCASTER = 'broadcaster',
 }
 export enum ElevenLabsModel {
-  eleven_flash_v2_5 = "eleven_flash_v2_5",
-  eleven_multilingual_v2 = "eleven_multilingual_v2",
+  eleven_flash_v2_5 = 'eleven_flash_v2_5',
+  eleven_multilingual_v2 = 'eleven_multilingual_v2',
 }
 export interface ElevenLabsSettings {
   stability?: number;
@@ -31,8 +40,8 @@ export interface ElevenLabsSettings {
   use_speaker_boost?: boolean;
 }
 export enum STTProvider {
-  DEEPGRAM = "deepgram",
-  GLADIA = "gladia",
+  DEEPGRAM = 'deepgram',
+  GLADIA = 'gladia',
 }
 export interface STTSettings {
   provider?: STTProvider;
@@ -95,6 +104,7 @@ export enum StreamingEvents {
   USER_SILENCE = 'user_silence',
   STREAM_READY = 'stream_ready',
   STREAM_DISCONNECTED = 'stream_disconnected',
+  CONNECTION_QUALITY_CHANGED = 'connection_quality_changed',
 }
 export type EventHandler = (...args: any[]) => void;
 export interface EventData {
@@ -168,6 +178,17 @@ class APIError extends Error {
   }
 }
 
+const ConnectionQualityIndicatorClass = QualityIndicatorMixer(
+  {
+    TrackerClass: LiveKitConnectionQualityIndicator,
+    getParams: (room: Room) => room,
+  },
+  {
+    TrackerClass: WebRTCConnectionQualityIndicator,
+    getParams: (room: Room) => (room.engine.pcManager?.subscriber as any)._pc,
+  }
+);
+
 class StreamingAvatar {
   public room: Room | null = null;
   public mediaStream: MediaStream | null = null;
@@ -176,7 +197,7 @@ class StreamingAvatar {
   private readonly basePath: string;
   private eventTarget = new EventTarget();
   private audioContext: AudioContext | null = null;
-  private webSocket: globalThis.WebSocket = null;
+  private webSocket: globalThis.WebSocket | null = null;
   private scriptProcessor: ScriptProcessorNode | null = null;
   private mediaStreamAudioSource: MediaStreamAudioSourceNode | null = null;
   private mediaDevicesStream: MediaStream | null = null;
@@ -184,10 +205,21 @@ class StreamingAvatar {
   private sessionId: string | null = null;
   private language: string | undefined;
   private isMuted: boolean = true;
+  private connectionQualityIndicator: AbstractConnectionQualityIndicator<Room>;
 
-  constructor({ token, basePath = 'https://api.heygen.com' }: StreamingAvatarApiConfig) {
+  constructor({
+    token,
+    basePath = 'https://api.heygen.com',
+  }: StreamingAvatarApiConfig) {
     this.token = token;
     this.basePath = basePath;
+    this.connectionQualityIndicator = new ConnectionQualityIndicatorClass((quality) =>
+      this.emit(StreamingEvents.CONNECTION_QUALITY_CHANGED, quality)
+    );
+  }
+
+  public get connectionQuality(): ConnectionQuality {
+    return this.connectionQualityIndicator.connectionQuality;
   }
 
   public get isInputAudioMuted(): boolean {
@@ -225,7 +257,7 @@ class StreamingAvatar {
     room.on(RoomEvent.DataReceived, (roomMessage) => {
       let eventMsg: StreamingEventTypes | null = null;
       try {
-        const messageString = new TextDecoder().decode(roomMessage as ArrayBuffer);
+        const messageString = new TextDecoder().decode(roomMessage);
         eventMsg = JSON.parse(messageString) as StreamingEventTypes;
       } catch (e) {
         console.error(e);
@@ -267,6 +299,7 @@ class StreamingAvatar {
     await this.startSession();
 
     await room.connect(sessionInfo.url, sessionInfo.access_token);
+    this.connectionQualityIndicator.start(room);
 
     return sessionInfo;
   }
@@ -328,8 +361,10 @@ class StreamingAvatar {
             numChannels: 1,
           },
         });
-        const encodedFrame = new Uint8Array(this.audioRawFrame?.encode(frame).finish());
-        this.webSocket?.send(encodedFrame);
+        if (frame && this.audioRawFrame && this.webSocket) {
+          const encodedFrame = new Uint8Array(this.audioRawFrame.encode(frame).finish());
+          this.webSocket?.send(encodedFrame);
+        }
       };
 
       // though room has been connected, but the stream may not be ready.
@@ -437,6 +472,7 @@ class StreamingAvatar {
   public async stopAvatar(): Promise<any> {
     // clear some resources
     this.closeVoiceChat();
+    this.connectionQualityIndicator.stop();
     return this.request('/v1/streaming.stop', {
       session_id: this.sessionId,
     });
@@ -500,7 +536,9 @@ class StreamingAvatar {
         console.error(e);
         return;
       }
-      this.emit(eventData.event_type, eventData);
+      if (eventData) {
+        this.emit(eventData.event_type, eventData);
+      }
     });
     this.webSocket.addEventListener('close', (event) => {
       this.webSocket = null;
