@@ -17,10 +17,12 @@ export class LivekitVoiceChat extends AbstractVoiceChatImplementation<LivekitVoi
       noiseSuppression: true,
       autoGainControl: true,
     });
-    if (voiceChatConfig.config?.defaultMuted) {
+    await this.room.localParticipant.publishTrack(this.track);
+    if (!voiceChatConfig.config?.defaultMuted) {
+      this.unmute();
+    }else{
       this.mute();
     }
-    await this.room.localParticipant.publishTrack(this.track);
     await sleep(4000);
   }
 
@@ -39,10 +41,14 @@ export class LivekitVoiceChat extends AbstractVoiceChatImplementation<LivekitVoi
   }
 
   protected _mute(): void {
-    this.track?.mute();
+    if (this.track && !this.track.isMuted) {
+      this.track.mute();
+    }
   }
 
   protected _unmute(): void {
-    this.track?.unmute();
+    if (this.track && this.track.isMuted) {
+      this.track.unmute();
+    }
   }
 }

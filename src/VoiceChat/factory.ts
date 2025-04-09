@@ -50,12 +50,12 @@ export class VoiceChatFactory extends AbstractVoiceChat<VoiceChatConfig> {
     await this.voiceChat.stopVoiceChat();
   }
 
-  public async mute() {
-    await this.voiceChat.mute();
+  public mute() {
+    this.voiceChat.mute();
   }
 
-  public async unmute() {
-    await this.voiceChat.unmute();
+  public unmute() {
+    this.voiceChat.unmute();
   }
 
   static createLiveKitVoiceChat(voiceChatConfig: LivekitVoiceChatConfig) {

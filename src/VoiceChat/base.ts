@@ -73,7 +73,7 @@ export abstract class AbstractVoiceChatImplementation<T extends VoiceChatConfig 
     this._isMuted = true;
   }
 
-  public async unmute() {
+  public unmute() {
     if (!this.isVoiceChatting) {
       return;
     }

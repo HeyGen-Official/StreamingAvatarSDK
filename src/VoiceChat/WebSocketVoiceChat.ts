@@ -1,6 +1,5 @@
 import { AbstractVoiceChatImplementation, VoiceChatConfig } from './base';
 import { convertFloat32ToS16PCM, sleep } from '../utils';
-import jsonDescriptor from '../pipecat.json';
 import protobuf from 'protobufjs';
 
 export interface WebSocketVoiceChatConfig extends VoiceChatConfig {
@@ -27,8 +26,8 @@ export class WebSocketVoiceChat extends AbstractVoiceChatImplementation<WebSocke
       latencyHint: 'interactive',
       sampleRate: 16000,
     });
-    if (voiceChatConfig.config?.defaultMuted) {
-      this.mute();
+    if (!voiceChatConfig.config?.defaultMuted) {
+      this.unmute();
     }
     const devicesStream = await navigator.mediaDevices.getUserMedia({
       audio: {
