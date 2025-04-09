@@ -1,6 +1,5 @@
 import { Room, RoomEvent, VideoPresets } from 'livekit-client';
 import protobuf from 'protobufjs';
-import { convertFloat32ToS16PCM, sleep } from './utils';
 import jsonDescriptor from './pipecat.json';
 import {
   ConnectionQuality,
@@ -9,8 +8,10 @@ import {
   QualityIndicatorMixer,
   AbstractConnectionQualityIndicator,
 } from './QualityIndicator';
+import { AbstractVoiceChat, VoiceChatFactory, VoiceChatTransport } from './VoiceChat';
 
 export { ConnectionQuality } from './QualityIndicator';
+export { VoiceChatTransport } from './VoiceChat';
 
 export interface StreamingAvatarApiConfig {
   token: string;
@@ -62,6 +63,8 @@ export interface StartAvatarRequest {
   knowledgeBase?: string;
   disableIdleTimeout?: boolean;
   sttSettings?: STTSettings;
+  useSilencePrompt?: boolean;
+  voiceChatTransport?: VoiceChatTransport;
 }
 
 export interface StartAvatarResponse {
@@ -196,21 +199,14 @@ class StreamingAvatar {
   private readonly token: string;
   private readonly basePath: string;
   private eventTarget = new EventTarget();
-  private audioContext: AudioContext | null = null;
   private webSocket: globalThis.WebSocket | null = null;
-  private scriptProcessor: ScriptProcessorNode | null = null;
-  private mediaStreamAudioSource: MediaStreamAudioSourceNode | null = null;
-  private mediaDevicesStream: MediaStream | null = null;
   private audioRawFrame: protobuf.Type | undefined;
   private sessionId: string | null = null;
-  private language: string | undefined;
-  private isMuted: boolean = true;
   private connectionQualityIndicator: AbstractConnectionQualityIndicator<Room>;
+  private voiceChat: AbstractVoiceChat | null = null;
+  private isLiveKitTransport: boolean = false;
 
-  constructor({
-    token,
-    basePath = 'https://api.heygen.com',
-  }: StreamingAvatarApiConfig) {
+  constructor({ token, basePath = 'https://api.heygen.com' }: StreamingAvatarApiConfig) {
     this.token = token;
     this.basePath = basePath;
     this.connectionQualityIndicator = new ConnectionQualityIndicatorClass((quality) =>
@@ -223,26 +219,22 @@ class StreamingAvatar {
   }
 
   public get isInputAudioMuted(): boolean {
-    return this.isMuted;
+    return this.voiceChat?.isMuted ?? true;
   }
 
   public muteInputAudio() {
-    if (this.isVoiceChatActive) {
-      this.isMuted = true;
-    }
+    this.voiceChat?.mute();
   }
 
   public unmuteInputAudio() {
-    if (this.isVoiceChatActive) {
-      this.isMuted = false;
-    }
+    this.voiceChat?.unmute();
   }
 
   public async createStartAvatar(requestData: StartAvatarRequest): Promise<any> {
     const sessionInfo = await this.newSession(requestData);
     this.sessionId = sessionInfo.session_id;
-    this.language = requestData.language;
-
+    this.isLiveKitTransport =
+      requestData.voiceChatTransport === VoiceChatTransport.LIVEKIT;
     const room = new Room({
       adaptiveStream: true,
       dynacast: true,
@@ -299,103 +291,21 @@ class StreamingAvatar {
     await this.startSession();
 
     await room.connect(sessionInfo.url, sessionInfo.access_token);
+    await this.connectWebSocket({ useSilencePrompt: !!requestData.useSilencePrompt });
+    this.initVoiceChat(requestData.voiceChatTransport || VoiceChatTransport.WEBSOCKET);
     this.connectionQualityIndicator.start(room);
 
     return sessionInfo;
   }
 
-  public async startVoiceChat(
-    requestData: { useSilencePrompt?: boolean; isInputAudioMuted?: boolean } = {}
-  ) {
-    requestData.useSilencePrompt = requestData.useSilencePrompt || false;
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      return;
-    }
-
-    try {
-      await this.loadAudioRawFrame();
-      await this.connectWebSocket({ useSilencePrompt: requestData.useSilencePrompt });
-
-      this.audioContext = new window.AudioContext({
-        latencyHint: 'interactive',
-        sampleRate: 16000,
-      });
-      const devicesStream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          sampleRate: 16000,
-          channelCount: 1,
-          autoGainControl: true,
-          echoCancellation: true,
-          noiseSuppression: true,
-        },
-      });
-      this.mediaDevicesStream = devicesStream;
-
-      this.mediaStreamAudioSource =
-        this.audioContext?.createMediaStreamSource(devicesStream);
-      this.scriptProcessor = this.audioContext?.createScriptProcessor(512, 1, 1);
-
-      this.mediaStreamAudioSource.connect(this.scriptProcessor);
-      this.scriptProcessor.connect(this.audioContext?.destination);
-
-      if (!requestData.isInputAudioMuted) {
-        this.isMuted = false;
-      }
-
-      this.scriptProcessor.onaudioprocess = (event) => {
-        if (!this.webSocket) {
-          return;
-        }
-        let audioData: Float32Array;
-        if (this.isInputAudioMuted) {
-          audioData = new Float32Array(512);
-        } else {
-          audioData = event.inputBuffer.getChannelData(0);
-        }
-        const pcmS16Array = convertFloat32ToS16PCM(audioData);
-        const pcmByteArray = new Uint8Array(pcmS16Array.buffer);
-        const frame = this.audioRawFrame?.create({
-          audio: {
-            audio: Array.from(pcmByteArray),
-            sampleRate: 16000,
-            numChannels: 1,
-          },
-        });
-        if (frame && this.audioRawFrame && this.webSocket) {
-          const encodedFrame = new Uint8Array(this.audioRawFrame.encode(frame).finish());
-          this.webSocket?.send(encodedFrame);
-        }
-      };
-
-      // though room has been connected, but the stream may not be ready.
-      await sleep(2000);
-    } catch (e) {
-      console.error(e);
-      throw e;
-    }
+  public async startVoiceChat({
+    isInputAudioMuted,
+  }: { isInputAudioMuted?: boolean } = {}) {
+    await this.voiceChat?.startVoiceChat({ config: { defaultMuted: isInputAudioMuted } });
   }
-  public closeVoiceChat() {
-    try {
-      this.isMuted = true;
-      if (this.audioContext) {
-        this.audioContext = null;
-      }
-      if (this.scriptProcessor) {
-        this.scriptProcessor.disconnect();
-        this.scriptProcessor = null;
-      }
-      if (this.mediaStreamAudioSource) {
-        this.mediaStreamAudioSource.disconnect();
-        this.mediaStreamAudioSource = null;
-      }
-      if (this.mediaDevicesStream) {
-        this.mediaDevicesStream?.getTracks()?.forEach((track) => track.stop());
-        this.mediaDevicesStream = null;
-      }
-      if (this.webSocket) {
-        this.webSocket.close();
-      }
-    } catch (e) {}
+
+  public async closeVoiceChat() {
+    await this.voiceChat?.stopVoiceChat();
   }
 
   public async newSession(requestData: StartAvatarRequest): Promise<StartAvatarResponse> {
@@ -417,6 +327,9 @@ class StreamingAvatar {
       source: 'sdk',
       disable_idle_timeout: requestData.disableIdleTimeout,
       stt_settings: requestData.sttSettings,
+      ia_is_livekit_transport:
+        requestData.voiceChatTransport === VoiceChatTransport.LIVEKIT,
+      silence_response: requestData.useSilencePrompt,
     });
   }
   public async startSession(): Promise<any> {
@@ -425,25 +338,20 @@ class StreamingAvatar {
     });
   }
   public async speak(requestData: SpeakRequest): Promise<any> {
-    requestData.taskType = requestData.taskType || requestData.task_type || TaskType.TALK;
-    requestData.taskMode = requestData.taskMode || TaskMode.ASYNC;
+    const taskType = requestData.taskType || requestData.task_type || TaskType.TALK;
+    const taskMode = requestData.taskMode || TaskMode.ASYNC;
 
-    // try to use websocket first
-    // only support talk task
-    if (
-      this.webSocket &&
-      this.audioRawFrame &&
-      requestData.task_type === TaskType.TALK &&
-      requestData.taskMode !== TaskMode.SYNC
-    ) {
-      const frame = this.audioRawFrame?.create({
-        text: {
-          text: requestData.text,
-        },
-      });
-      const encodedFrame = new Uint8Array(this.audioRawFrame?.encode(frame).finish());
-      this.webSocket?.send(encodedFrame);
-      return;
+    // livekit/websocket text transport supports only async talk task
+    if (taskType === TaskType.TALK && taskMode === TaskMode.ASYNC) {
+      if (this.isLiveKitTransport && this.room) {
+        this.sendLivekitMessage(requestData.text);
+        return;
+      }
+
+      if (!this.isLiveKitTransport && this.webSocket && this.audioRawFrame) {
+        this.sendWebsocketMessage(requestData.text);
+        return;
+      }
     }
     return this.request('/v1/streaming.task', {
       text: requestData.text,
@@ -473,6 +381,11 @@ class StreamingAvatar {
     // clear some resources
     this.closeVoiceChat();
     this.connectionQualityIndicator.stop();
+    this.voiceChat = null;
+    if (this.webSocket) {
+      this.webSocket.close();
+      this.webSocket = null;
+    }
     return this.request('/v1/streaming.stop', {
       session_id: this.sessionId,
     });
@@ -486,6 +399,50 @@ class StreamingAvatar {
   public off(eventType: string, listener: EventHandler): this {
     this.eventTarget.removeEventListener(eventType, listener);
     return this;
+  }
+
+  private async sendLivekitMessage(message: string) {
+    if (!this.room) {
+      return;
+    }
+    const data = new TextEncoder().encode(JSON.stringify(message));
+    this.room.localParticipant.publishData(data, { reliable: true });
+  }
+
+  private async sendWebsocketMessage(message: string) {
+    if (!this.webSocket || !this.audioRawFrame) {
+      return;
+    }
+    const frame = this.audioRawFrame?.create({
+      text: {
+        text: message,
+      },
+    });
+    const encodedFrame = new Uint8Array(this.audioRawFrame?.encode(frame).finish());
+    this.webSocket.send(encodedFrame);
+  }
+
+  private initVoiceChat(transport: VoiceChatTransport) {
+    if (transport === VoiceChatTransport.WEBSOCKET) {
+      this.loadAudioRawFrame();
+
+      if (!this.audioRawFrame || !this.webSocket) {
+        return;
+      }
+
+      this.voiceChat = VoiceChatFactory.createWebSocketVoiceChat({
+        webSocket: this.webSocket,
+        audioRawFrame: this.audioRawFrame,
+      });
+    } else {
+      if (!this.room) {
+        return;
+      }
+
+      this.voiceChat = VoiceChatFactory.createLiveKitVoiceChat({
+        room: this.room,
+      });
+    }
   }
 
   private async request(path: string, params: CommonRequest, config?: any): Promise<any> {
@@ -523,10 +480,7 @@ class StreamingAvatar {
     return `${this.basePath}${endpoint}`;
   }
   private async connectWebSocket(requestData: { useSilencePrompt: boolean }) {
-    let websocketUrl = `wss://${new URL(this.basePath).hostname}/v1/ws/streaming.chat?session_id=${this.sessionId}&session_token=${this.token}&silence_response=${requestData.useSilencePrompt}`;
-    if (this.language) {
-      websocketUrl += `&stt_language=${this.language}`;
-    }
+    let websocketUrl = `wss://${new URL(this.basePath).hostname}/v1/ws/streaming.chat?session_id=${this.sessionId}&session_token=${this.token}${this.isLiveKitTransport ? '&arch_version=v2' : ''}&silence_response=${requestData.useSilencePrompt}`;
     this.webSocket = new WebSocket(websocketUrl);
     this.webSocket.addEventListener('message', (event) => {
       let eventData: StreamingWebSocketEventTypes | null = null;
@@ -552,10 +506,6 @@ class StreamingAvatar {
         resolve(true);
       });
     });
-  }
-
-  private get isVoiceChatActive(): boolean {
-    return !!this.audioContext;
   }
 
   private async loadAudioRawFrame() {
