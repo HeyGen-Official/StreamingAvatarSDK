@@ -1,5 +1,8 @@
 ## Interactive-Avatar
 
+## Changes 2.1.0
+1. Added support for LiveKit for user audio and text messages input.
+
 ## Changes 2.0.12
 1. Added support for quality indicator.
 
@@ -87,6 +90,7 @@ async function startChatCreation(){
         },
         language: language,
         // disableIdleTimeout: false, // Default is false; enable cautiously.
+        voiceChatTransport?: VoiceChatTransport.WEBSOCKET, // user input transport. The default is WEBSOCKET
     });
     
     // switch to voice chat. in this mode, we will record your voice and keep chatting with avatar in real time.
