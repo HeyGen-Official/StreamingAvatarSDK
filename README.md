@@ -1,6 +1,6 @@
 ## Interactive-Avatar
 
-## Changes 2.1.0
+## Changes 2.0.13
 1. Added support for LiveKit for user audio and text messages input.
 
 ## Changes 2.0.12
