@@ -318,8 +318,10 @@ class StreamingAvatar {
         voice_id: requestData.voice?.voiceId,
         rate: requestData.voice?.rate,
         emotion: requestData.voice?.emotion,
-        elevenlabs_settings: requestData?.voice?.elevenlabsSettings,
-        model: requestData.voice?.model,
+        elevenlabs_settings: {
+          ...requestData?.voice?.elevenlabsSettings,
+          model_id: requestData.voice?.model,
+        },
       },
       language: requestData.language,
       version: 'v2',
