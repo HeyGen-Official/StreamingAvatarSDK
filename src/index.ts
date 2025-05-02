@@ -230,8 +230,13 @@ class StreamingAvatar {
     this.voiceChat?.unmute();
   }
 
-  public async createStartAvatar(requestData: StartAvatarRequest): Promise<any> {
+
+  public async createStartAvatar(requestData: StartAvatarRequest): Promise<StartAvatarResponse> {
     const sessionInfo = await this.newSession(requestData);
+    return this.startAvatar(requestData, sessionInfo)
+  }
+
+  public async startAvatar(requestData: StartAvatarRequest, sessionInfo: StartAvatarResponse): Promise<StartAvatarResponse> {
     this.sessionId = sessionInfo.session_id;
     this.isLiveKitTransport =
       requestData.voiceChatTransport === VoiceChatTransport.LIVEKIT;
