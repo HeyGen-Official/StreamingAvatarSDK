@@ -1,5 +1,8 @@
 ## Interactive-Avatar
 
+## Changes 2.0.15
+1. Add an ability to control audio input device that is used for voice chat.
+
 ## Changes 2.0.13
 1. Added support for LiveKit for user audio and text messages input.
 
