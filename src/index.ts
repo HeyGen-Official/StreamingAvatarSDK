@@ -67,6 +67,11 @@ export interface StartAvatarRequest {
   voiceChatTransport?: VoiceChatTransport;
 }
 
+export interface VoiceChatConfig {
+  deviceId?: ConstrainDOMString;
+  isInputAudioMuted?: boolean;
+}
+
 export interface StartAvatarResponse {
   session_id: string;
   access_token: string;
@@ -230,6 +235,14 @@ class StreamingAvatar {
     this.voiceChat?.unmute();
   }
 
+  public getVoiceChatDeviceId(): Promise<string | undefined> | undefined {
+    return this.voiceChat?.getDeviceId();
+  }
+
+  public async setVoiceChatDeviceId(deviceId: ConstrainDOMString) {
+    await this.voiceChat?.setDeviceId(deviceId);
+  }
+
   public async createStartAvatar(requestData: StartAvatarRequest): Promise<any> {
     const sessionInfo = await this.newSession(requestData);
     this.sessionId = sessionInfo.session_id;
@@ -298,10 +311,8 @@ class StreamingAvatar {
     return sessionInfo;
   }
 
-  public async startVoiceChat({
-    isInputAudioMuted,
-  }: { isInputAudioMuted?: boolean } = {}) {
-    await this.voiceChat?.startVoiceChat({ config: { defaultMuted: isInputAudioMuted } });
+  public async startVoiceChat(config?: VoiceChatConfig) {
+    await this.voiceChat?.startVoiceChat({ config: config || {} });
   }
 
   public async closeVoiceChat() {

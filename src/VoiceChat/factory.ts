@@ -28,7 +28,10 @@ export class VoiceChatFactory extends AbstractVoiceChat<VoiceChatConfig> {
     'config'
   >;
 
-  constructor({ voiceChatInstance, initialConfig }: VoiceChatInitialConfig<VoiceChatTransport>) {
+  constructor({
+    voiceChatInstance,
+    initialConfig,
+  }: VoiceChatInitialConfig<VoiceChatTransport>) {
     super();
     this.initialConfig = initialConfig;
     this.voiceChat = voiceChatInstance;
@@ -40,6 +43,10 @@ export class VoiceChatFactory extends AbstractVoiceChat<VoiceChatConfig> {
 
   public get isVoiceChatting(): boolean {
     return this.voiceChat.isVoiceChatting;
+  }
+
+  public getDeviceId(): Promise<string | undefined> {
+    return this.voiceChat.getDeviceId();
   }
 
   public async startVoiceChat({ config }: VoiceChatConfig) {
@@ -56,6 +63,10 @@ export class VoiceChatFactory extends AbstractVoiceChat<VoiceChatConfig> {
 
   public unmute() {
     this.voiceChat.unmute();
+  }
+
+  public async setDeviceId(deviceId: string) {
+    await this.voiceChat.setDeviceId(deviceId);
   }
 
   static createLiveKitVoiceChat(voiceChatConfig: LivekitVoiceChatConfig) {

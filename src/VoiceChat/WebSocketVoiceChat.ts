@@ -15,6 +15,12 @@ export class WebSocketVoiceChat extends AbstractVoiceChatImplementation<WebSocke
   private mediaDevicesStream: MediaStream | null = null;
   private audioRawFrame: protobuf.Type | null = null;
 
+  public getDeviceId(): Promise<string | undefined> {
+    return Promise.resolve(
+      this.mediaDevicesStream?.getTracks()[0]?.getSettings().deviceId
+    );
+  }
+
   protected async _startVoiceChat(voiceChatConfig: WebSocketVoiceChatConfig) {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       throw new Error('Cannot start voice chat without media devices');
@@ -36,6 +42,7 @@ export class WebSocketVoiceChat extends AbstractVoiceChatImplementation<WebSocke
         autoGainControl: true,
         echoCancellation: true,
         noiseSuppression: true,
+        deviceId: voiceChatConfig.config?.deviceId,
       },
     });
     this.mediaDevicesStream = devicesStream;
@@ -89,6 +96,20 @@ export class WebSocketVoiceChat extends AbstractVoiceChatImplementation<WebSocke
     if (this.mediaDevicesStream) {
       this.mediaDevicesStream?.getTracks()?.forEach((track) => track.stop());
       this.mediaDevicesStream = null;
+    }
+  }
+
+  protected async _setDeviceId(deviceId: ConstrainDOMString): Promise<void> {
+    if (this.webSocket && this.audioRawFrame) {
+      await this._stopVoiceChat();
+      await this._startVoiceChat({
+        webSocket: this.webSocket,
+        audioRawFrame: this.audioRawFrame,
+        config: {
+          deviceId,
+          defaultMuted: this.isMuted,
+        },
+      });
     }
   }
 }

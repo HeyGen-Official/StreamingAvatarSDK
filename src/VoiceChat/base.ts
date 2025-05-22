@@ -6,19 +6,23 @@ export enum VoiceChatState {
 }
 
 export interface VoiceChatConfig {
-  config?: { defaultMuted?: boolean };
+  config?: { defaultMuted?: boolean; deviceId?: ConstrainDOMString };
 }
 
 export abstract class AbstractVoiceChat<T extends VoiceChatConfig = VoiceChatConfig> {
   abstract get isMuted(): boolean;
   abstract get isVoiceChatting(): boolean;
+  abstract getDeviceId(): Promise<string | undefined>;
   abstract startVoiceChat(config: T): Promise<void>;
   abstract stopVoiceChat(): Promise<void>;
   abstract mute(): void;
   abstract unmute(): void;
+  abstract setDeviceId(deviceId: ConstrainDOMString): Promise<void>;
 }
 
-export abstract class AbstractVoiceChatImplementation<T extends VoiceChatConfig = VoiceChatConfig> extends AbstractVoiceChat<T> {
+export abstract class AbstractVoiceChatImplementation<
+  T extends VoiceChatConfig = VoiceChatConfig,
+> extends AbstractVoiceChat<T> {
   private _isMuted: boolean = true;
   protected state: VoiceChatState = VoiceChatState.INACTIVE;
 
@@ -30,8 +34,10 @@ export abstract class AbstractVoiceChatImplementation<T extends VoiceChatConfig 
     return this.state !== VoiceChatState.INACTIVE;
   }
 
+  abstract getDeviceId(): Promise<string | undefined>;
   protected abstract _startVoiceChat(voiceChatConfig: T): Promise<void>;
   protected abstract _stopVoiceChat(): Promise<void>;
+  protected abstract _setDeviceId(deviceId: ConstrainDOMString): Promise<void>;
 
   public async startVoiceChat(voiceChatConfig: T) {
     if (this.state !== VoiceChatState.INACTIVE) {
@@ -79,5 +85,13 @@ export abstract class AbstractVoiceChatImplementation<T extends VoiceChatConfig 
     }
     this._unmute();
     this._isMuted = false;
+  }
+
+  public async setDeviceId(deviceId: ConstrainDOMString): Promise<void> {
+    if (this.state === VoiceChatState.ACTIVE) {
+      await this._setDeviceId(deviceId);
+    } else {
+      console.warn('Cannot set device id when voice chat is not active');
+    }
   }
 }
