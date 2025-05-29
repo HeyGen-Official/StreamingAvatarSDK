@@ -61,10 +61,12 @@ export interface StartAvatarRequest {
   knowledgeId?: string;
   language?: string;
   knowledgeBase?: string;
+  /** @deprecated use activityIdleTimeout and keepAlive method instead */
   disableIdleTimeout?: boolean;
   sttSettings?: STTSettings;
   useSilencePrompt?: boolean;
   voiceChatTransport?: VoiceChatTransport;
+  activityIdleTimeout?: number;
 }
 
 export interface StartAvatarResponse {
@@ -337,6 +339,7 @@ class StreamingAvatar {
       ia_is_livekit_transport:
         requestData.voiceChatTransport === VoiceChatTransport.LIVEKIT,
       silence_response: requestData.useSilencePrompt,
+      activity_idle_timeout: requestData.activityIdleTimeout,
     });
   }
   public async startSession(): Promise<any> {
@@ -394,6 +397,12 @@ class StreamingAvatar {
       this.webSocket = null;
     }
     return this.request('/v1/streaming.stop', {
+      session_id: this.sessionId,
+    });
+  }
+
+  public async keepAlive() {
+    return this.request('/v1/streaming.keep_alive', {
       session_id: this.sessionId,
     });
   }

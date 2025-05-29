@@ -1,5 +1,10 @@
 ## Interactive-Avatar
 
+## 2.0.16
+1. Add support `activityIdleTimeout` to control time before session ending after last activity.
+2. Add `keepAlive` method to continue session in a controlled way.
+3. Deprecate `disableIdleTimeout`, `activityIdleTimeout` and `keepAlive` should be used instead.
+
 ## Changes 2.0.13
 1. Added support for LiveKit for user audio and text messages input.
 
@@ -91,6 +96,9 @@ async function startChatCreation(){
         language: language,
         // disableIdleTimeout: false, // Default is false; enable cautiously.
         voiceChatTransport?: VoiceChatTransport.WEBSOCKET, // user input transport. The default is WEBSOCKET
+        // number of seconds that avatar will wait before closing session after last activity, 
+        // expects value from 30 to 3600 (1h)
+        activityIdleTimeout?: number, // The default is 120 (2 minutes)
     });
     
     // switch to voice chat. in this mode, we will record your voice and keep chatting with avatar in real time.
@@ -111,6 +119,10 @@ streamingAvatar.closeVoiceChat();
 
 // close the session
 streamingAvatar.stopAvatar();
+
+// keep session alive, will be count as an activity to keep session for additional `activityIdleTimeout` seconds
+// after last activity.
+streamingAvatar.keepAlive();
 
 // interrupt the avatar's talking
 streamingAvatar.interrupt();
