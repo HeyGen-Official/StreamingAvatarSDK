@@ -36,7 +36,7 @@
   "homepage": "https://github.com/HeyGen-Official/StreamingAvatarSDK",
   "license": "MIT",
   "dependencies": {
-    "livekit-client": "^2.11.3",
+    "livekit-client": "2.15.5",
     "protobufjs": "^7.5.0",
     "webrtc-issue-detector": "^1.16.3"
   },
