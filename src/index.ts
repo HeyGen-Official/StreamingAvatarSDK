@@ -413,6 +413,10 @@ class StreamingAvatar {
       throw new Error('push to talk is not enabled');
     }
 
+    if (!this.voiceChat.isVoiceChatting) {
+      throw new Error('voice chat is not active');
+    }
+
     if (!this.room) {
       throw new Error('room is not initialized');
     }
@@ -427,6 +431,10 @@ class StreamingAvatar {
 
     if (!this.enablePushToTalk) {
       throw new Error('push to talk is not enabled');
+    }
+
+    if (!this.voiceChat.isVoiceChatting) {
+      console.log('voice chat is not active');
     }
 
     if (!this.room) {
