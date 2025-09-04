@@ -404,26 +404,36 @@ class StreamingAvatar {
     });
   }
 
-  public async startTalking(): Promise<any> {
-    if (!this.enablePushToTalk) {
-      return;
+  public async pushToTalkStart(): Promise<any> {
+    if (!this.isLiveKitTransport) {
+      throw new Error('push to talk is only supported for LiveKit transport');
     }
 
-    if (this.isLiveKitTransport && this.room) {
-      this.sendLivekitMessage("push_to_talk:start");
-      return;
+    if (!this.enablePushToTalk) {
+      throw new Error('push to talk is not enabled');
     }
+
+    if (!this.room) {
+      throw new Error('room is not initialized');
+    }
+
+    return this.sendLivekitMessage("push_to_talk:start");
   }
 
-  public async stopTalking(): Promise<any> {
-    if (!this.enablePushToTalk) {
-      return;
+  public async pushToTalkStop(): Promise<any> {
+    if (!this.isLiveKitTransport) {
+      throw new Error('push to talk is only supported for LiveKit transport');
     }
 
-    if (this.isLiveKitTransport && this.room) {
-      this.sendLivekitMessage("push_to_talk:stop");
-      return;
+    if (!this.enablePushToTalk) {
+      throw new Error('push to talk is not enabled');
     }
+
+    if (!this.room) {
+      throw new Error('room is not initialized');
+    }
+
+    return this.sendLivekitMessage("push_to_talk:stop");
   }
 
   public async keepAlive() {
