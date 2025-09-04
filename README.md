@@ -1,6 +1,11 @@
 ## Interactive-Avatar
 
-## 2.0.16
+## Changes 2.1.0
+1. Add push-to-talk support via two new function `pushToTalkStart` and `pushToTalkStop`.  
+   Push-to-talk requires liveKit voice transport: `voiceChatTransport: VoiceChatTransport.LIVEKIT`, and requires 
+   voice chat to have started.
+
+## Changes 2.0.16
 1. Add support `activityIdleTimeout` to control time before session ending after last activity.
 2. Add `keepAlive` method to continue session in a controlled way.
 3. Deprecate `disableIdleTimeout`, `activityIdleTimeout` and `keepAlive` should be used instead.
