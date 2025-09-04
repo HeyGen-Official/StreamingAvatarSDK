@@ -67,6 +67,7 @@ export interface StartAvatarRequest {
   useSilencePrompt?: boolean;
   voiceChatTransport?: VoiceChatTransport;
   activityIdleTimeout?: number;
+  enablePushToTalk?: boolean;
 }
 
 export interface StartAvatarResponse {
@@ -207,6 +208,7 @@ class StreamingAvatar {
   private connectionQualityIndicator: AbstractConnectionQualityIndicator<Room>;
   private voiceChat: AbstractVoiceChat | null = null;
   private isLiveKitTransport: boolean = false;
+  private enablePushToTalk: boolean = false;
 
   constructor({ token, basePath = 'https://api.heygen.com' }: StreamingAvatarApiConfig) {
     this.token = token;
@@ -252,6 +254,7 @@ class StreamingAvatar {
 
     this.room = room;
     this.mediaStream = null;
+    this.enablePushToTalk = requestData.enablePushToTalk ?? false;
 
     room.on(RoomEvent.DataReceived, (roomMessage) => {
       let eventMsg: StreamingEventTypes | null = null;
@@ -401,6 +404,28 @@ class StreamingAvatar {
     });
   }
 
+  public async startTalking(): Promise<any> {
+    if (!this.enablePushToTalk) {
+      return;
+    }
+
+    if (this.isLiveKitTransport && this.room) {
+      this.sendLivekitMessage("push_to_talk:start");
+      return;
+    }
+  }
+
+  public async stopTalking(): Promise<any> {
+    if (!this.enablePushToTalk) {
+      return;
+    }
+
+    if (this.isLiveKitTransport && this.room) {
+      this.sendLivekitMessage("push_to_talk:stop");
+      return;
+    }
+  }
+
   public async keepAlive() {
     return this.request('/v1/streaming.keep_alive', {
       session_id: this.sessionId,
@@ -496,7 +521,7 @@ class StreamingAvatar {
     return `${this.basePath}${endpoint}`;
   }
   private async connectWebSocket(requestData: { useSilencePrompt: boolean }) {
-    let websocketUrl = `wss://${new URL(this.basePath).hostname}/v1/ws/streaming.chat?session_id=${this.sessionId}&session_token=${this.token}${this.isLiveKitTransport ? '&arch_version=v2' : ''}&silence_response=${requestData.useSilencePrompt}`;
+    let websocketUrl = `wss://${new URL(this.basePath).hostname}/v1/ws/streaming.chat?session_id=${this.sessionId}&session_token=${this.token}${this.isLiveKitTransport ? '&arch_version=v2' : ''}&silence_response=${requestData.useSilencePrompt}&push_to_talk=${this.enablePushToTalk}`;
     this.webSocket = new WebSocket(websocketUrl);
     this.webSocket.addEventListener('message', (event) => {
       let eventData: StreamingWebSocketEventTypes | null = null;
